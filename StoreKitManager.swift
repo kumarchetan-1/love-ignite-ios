@@ -1,14 +1,21 @@
 import Foundation
+import Combine
 import StoreKit // Ensure StoreKit is imported to access its types and methods
 
+@MainActor
 class StoreKitManager: ObservableObject {
+    // Explicitly define a typealias for StoreKit.Product within this class.
+    // This helps resolve any potential type ambiguity that might be causing the misleading compiler error.
+    private typealias SKProduct = StoreKit.Product
+
+    static let shared = StoreKitManager()
     @Published var hasSubscription: Bool = false
     @Published var showPaywall: Bool = false
 
-    private var products: [StoreKit.Product] = [] // Assuming you'll store fetched products here
+    private var products: [SKProduct] = [] // Use the typealias here
 
     private init() {
-        // Corrected: Removed the erroneous `as any Decoder`
+        // Kick off initial product request and subscription check
         Task { [weak self] in
             guard let self else { return }
             await self.requestProducts()
@@ -20,7 +27,8 @@ class StoreKitManager: ObservableObject {
     func requestProducts() async {
         do {
             // Replace "YOUR_PRODUCT_ID" with your actual product identifiers from App Store Connect
-            let productIDs = ["YOUR_PRODUCT_ID_1", "YOUR_PRODUCT_ID_2"] 
+            let productIDs = ["YOUR_PRODUCT_ID_1", "YOUR_PRODUCT_ID_2"]
+            // Still use StoreKit.Product directly for the static method call
             self.products = try await StoreKit.Product.products(for: Set(productIDs))
             print("Fetched products: \(self.products.map { $0.id })")
         } catch {
@@ -44,7 +52,7 @@ class StoreKitManager: ObservableObject {
         print("Checking subscription status...")
         self.hasSubscription = false // Default or actual check
     }
-    
+
     // Placeholder for updating subscription state after a purchase or restore
     func updateSubscriptionState() async {
         await checkSubscription() // Re-check subscription state
@@ -61,9 +69,9 @@ class StoreKitManager: ObservableObject {
             return verifiedTransaction
         }
     }
-    
+
     // Corrected: Explicitly use StoreKit.Product and add `options: []` to the purchase call
-    func purchase(_ product: StoreKit.Product) async throws -> StoreKit.Transaction? {
+    func purchase(_ product: SKProduct) async throws -> StoreKit.Transaction? { // Use the typealias for the parameter
         print("Attempting to purchase product: \(product.id)")
         let result = try await product.purchase(options: []) // Key change here
         switch result {
@@ -92,3 +100,4 @@ class StoreKitManager: ObservableObject {
         // Add other relevant error cases
     }
 }
+
