@@ -95,6 +95,10 @@ final class ScratchUIView: UIView {
         let p = t.location(in: self)
         if let lp = lastPoint {
             drawLine(from: lp, to: p)
+            // Add light haptic feedback while scratching
+            if Int.random(in: 0...5) == 0 { // Don't overwhelm the haptic engine
+                Haptics.light()
+            }
         }
         lastPoint = p
     }

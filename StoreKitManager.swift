@@ -1,103 +1,113 @@
 import Foundation
 import Combine
-import StoreKit // Ensure StoreKit is imported to access its types and methods
+import StoreKit
 
 @MainActor
 class StoreKitManager: ObservableObject {
-    // Explicitly define a typealias for StoreKit.Product within this class.
-    // This helps resolve any potential type ambiguity that might be causing the misleading compiler error.
-    private typealias SKProduct = StoreKit.Product
-
     static let shared = StoreKitManager()
+    
     @Published var hasSubscription: Bool = false
+    @Published var canEraseAll: Bool = false
     @Published var showPaywall: Bool = false
-
-    private var products: [SKProduct] = [] // Use the typealias here
-
+    @Published var products: [Product] = []
+    
+    // MARK: - Configuration
+    // These must match exactly what you set in App Store Connect
+    public let productIDs: Set<String> = [
+        "com.yourapp.monthly",   // e.g. $4.99 / month
+        "com.yourapp.yearly",    // e.g. $29.99 / year
+        "com.yourapp.lifetime"   // The $30 / ₹499 plan (Unlocks Everything + Erase All)
+    ]
+    
     private init() {
         // Kick off initial product request and subscription check
-        Task { [weak self] in
-            guard let self else { return }
-            await self.requestProducts()
-            await self.checkSubscription()
+        Task {
+            await requestProducts()
+            await checkSubscription()
         }
     }
-
-    // Placeholder for fetching products
+    
     func requestProducts() async {
         do {
-            // Replace "YOUR_PRODUCT_ID" with your actual product identifiers from App Store Connect
-            let productIDs = ["YOUR_PRODUCT_ID_1", "YOUR_PRODUCT_ID_2"]
-            // Still use StoreKit.Product directly for the static method call
-            self.products = try await StoreKit.Product.products(for: Set(productIDs))
+            // Sort products by price to keep UI consistent
+            let fetchedProducts = try await Product.products(for: productIDs)
+            self.products = fetchedProducts.sorted(by: { $0.price < $1.price })
             print("Fetched products: \(self.products.map { $0.id })")
         } catch {
             print("Failed to fetch products: \(error)")
         }
     }
-
-    // Placeholder for checking subscription status
+    
     func checkSubscription() async {
-        // Implement logic to check active subscriptions, e.g., by iterating through StoreKit.Transaction.currentEntitlements
-        // For example:
-        // for await entitlement in StoreKit.Transaction.currentEntitlements {
-        //     if case .verified(let transaction) = entitlement {
-        //         if transaction.productType == .autoRenewable && !transaction.isUpgraded {
-        //             self.hasSubscription = true
-        //             return
-        //         }
-        //     }
-        // }
-        // self.hasSubscription = false
-        print("Checking subscription status...")
-        self.hasSubscription = false // Default or actual check
-    }
-
-    // Placeholder for updating subscription state after a purchase or restore
-    func updateSubscriptionState() async {
-        await checkSubscription() // Re-check subscription state
-    }
-
-    // Helper function to verify a transaction
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        switch result {
-        case .unverified(let unverifiedTransaction, let error):
-            // Handle unverified transaction here
-            print("Unverified transaction: \(unverifiedTransaction), error: \(error)")
-            throw StoreKitError.unverifiedTransaction // Or a more specific error
-        case .verified(let verifiedTransaction):
-            return verifiedTransaction
+        var hasActiveSub = false
+        var hasErase = false
+        
+        for await entitlement in Transaction.currentEntitlements {
+            if case .verified(let transaction) = entitlement {
+                print("Found active entitlement: \(transaction.productID)")
+                
+                // LIFETIME: Unlocks EVERYTHING (Subscription features + Erase button)
+                if transaction.productID == "com.yourapp.lifetime" {
+                    hasActiveSub = true
+                    hasErase = true
+                }
+                // SUBSCRIPTION: Unlocks content only
+                else if ["com.yourapp.monthly", "com.yourapp.yearly"].contains(transaction.productID) {
+                    hasActiveSub = true
+                }
+                // ERASE ONLY (If you ever wanted to sell it separately, though user implies it's in the $30 plan)
+                else if transaction.productID == "com.yourapp.eraseall" {
+                    hasErase = true
+                }
+            }
         }
+        
+        // Update published properties on main thread
+        self.hasSubscription = hasActiveSub
+        self.canEraseAll = hasErase
     }
-
-    // Corrected: Explicitly use StoreKit.Product and add `options: []` to the purchase call
-    func purchase(_ product: SKProduct) async throws -> StoreKit.Transaction? { // Use the typealias for the parameter
+    
+    func updateSubscriptionState() async {
+        await checkSubscription()
+    }
+    
+    func purchase(_ product: Product) async throws -> Transaction? {
         print("Attempting to purchase product: \(product.id)")
-        let result = try await product.purchase(options: []) // Key change here
+        let result = try await product.purchase()
+        
         switch result {
         case .success(let verification):
             let transaction = try checkVerified(verification)
             await updateSubscriptionState()
+            await transaction.finish() 
             return transaction
+            
         case .pending:
-            // Handle pending transaction (e.g., parental approval, challenge required)
             print("Purchase is pending.")
             return nil
+            
         case .userCancelled:
             print("Purchase was cancelled by the user.")
             return nil
+            
         @unknown default:
-            // Handle any future cases not yet defined by StoreKit
             print("Unknown purchase result.")
             return nil
         }
     }
-
-    // Custom error type for StoreKit operations, if needed
+    
+    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+        switch result {
+        case .unverified(let unverifiedTransaction, let error):
+            print("Unverified transaction: \(unverifiedTransaction), error: \(error)")
+            throw StoreKitError.unverifiedTransaction
+        case .verified(let verifiedTransaction):
+            return verifiedTransaction
+        }
+    }
+    
     enum StoreKitError: Error {
         case unverifiedTransaction
         case productNotFound
-        // Add other relevant error cases
     }
 }
-

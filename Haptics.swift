@@ -11,6 +11,11 @@ struct Haptics {
         let gen = UIImpactFeedbackGenerator(style: .medium)
         gen.impactOccurred()
     }
+    
+    static func light() {
+        let gen = UIImpactFeedbackGenerator(style: .light)
+        gen.impactOccurred()
+    }
 
     static func selection() {
         let gen = UISelectionFeedbackGenerator()
