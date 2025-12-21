@@ -4,6 +4,8 @@ import StoreKit
 struct SettingsView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @EnvironmentObject var store: StoreKitManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.colorScheme) private var scheme
     @State private var showAuthSheet = false
     
     // User preferences
@@ -12,10 +14,15 @@ struct SettingsView: View {
     @AppStorage("hide_explicit") private var hideExplicit: Bool = false
     @AppStorage("theme_preference") private var themePreference: String = "dark"
     
+    @State private var showingReminderAlert = false
+    
     var body: some View {
         NavigationView {
             ZStack {
-                Color("bg1").ignoresSafeArea() // Fallback bg if list is transparent
+                LinearGradient(gradient: Gradient(colors: ThemePalette.backgroundColors(for: scheme)),
+                               startPoint: .topLeading,
+                               endPoint: .bottomTrailing)
+                .ignoresSafeArea() // Fallback bg if list is transparent
                 
                 List {
                     // MARK: - Account Section
@@ -106,12 +113,22 @@ struct SettingsView: View {
                     Section {
                         Toggle("Haptic Feedback", isOn: $hapticsEnabled)
                         Toggle("Daily Reminders", isOn: $dailyReminders)
+                            .onChange(of: dailyReminders) { newValue in
+                                showingReminderAlert = true
+                                // TODO: integrate UserNotifications if desired
+                            }
                         Toggle("Hide Explicit Content", isOn: $hideExplicit)
+                            .onChange(of: hideExplicit) { _ in
+                                // Triggers UI update via @AppStorage; filtering happens in PosterGridView
+                            }
                         
                         Picker("Theme", selection: $themePreference) {
                             Text("Dark").tag("dark")
                             Text("Light").tag("light")
                             Text("System").tag("system")
+                        }
+                        .onChange(of: themePreference) { _ in
+                            themeManager.themePreference = themePreference
                         }
                         
                     } header: {
@@ -139,6 +156,11 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .sheet(isPresented: $showAuthSheet) {
                 AuthenticationView()
+            }
+            .alert("Daily reminders", isPresented: $showingReminderAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(dailyReminders ? "Reminders preference saved." : "Reminders turned off.")
             }
         }
     }

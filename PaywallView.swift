@@ -5,6 +5,7 @@ struct PaywallView: View {
     @EnvironmentObject var store: StoreKitManager
     @StateObject private var authManager = AuthenticationManager.shared
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) private var scheme
     
     @State private var isAnimating = false
     @State private var showAuthSheet = false
@@ -14,7 +15,7 @@ struct PaywallView: View {
     var body: some View {
         ZStack {
             // Background
-            LinearGradient(colors: [Color("bg1").opacity(0.8), Color("bg2")], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: ThemePalette.backgroundColors(for: scheme), startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
             
             // Abstract circles background
@@ -44,7 +45,7 @@ struct PaywallView: View {
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     
-                    Text("Get full access to all 69 Kama Sutra positions, spicy challenges, and unlimited fun.")
+                    Text("Get full access to all 59 Kama Sutra positions, spicy challenges, and unlimited fun.")
                         .font(.body)
                         .multilineTextAlignment(.center)
                         .foregroundColor(.white.opacity(0.8))
@@ -54,7 +55,7 @@ struct PaywallView: View {
 
                 // Features
                 VStack(spacing: 16) {
-                    FeatureRow(icon: "lock.open.fill", text: "Unlock all 69 Positions")
+                    FeatureRow(icon: "lock.open.fill", text: "Unlock all 59 Positions")
                     FeatureRow(icon: "flame.circle.fill", text: "Access 'Extra Hot' Challenges")
                     FeatureRow(icon: "trash.fill", text: "Unlock 'Erase All' Feature") // Added explicit mention
                     FeatureRow(icon: "star.fill", text: "Ad-free Experience")
@@ -90,10 +91,11 @@ struct PaywallView: View {
                 } else {
                     VStack(spacing: 12) {
                         if !isAuthed {
-                            VStack(spacing: 8) {
-                                Text("Sign in to subscribe")
+                            VStack(spacing: 6) {
+                                Text("Optional: Sign in to save your premium across devices.")
                                     .font(.footnote)
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.white.opacity(0.75))
                                 Button {
                                     showAuthSheet = true
                                 } label: {
@@ -109,10 +111,6 @@ struct PaywallView: View {
                         
                         ForEach(store.products, id: \.id) { product in
                             Button(action: {
-                                guard isAuthed else {
-                                    showAuthSheet = true
-                                    return
-                                }
                                 Task {
                                     Haptics.selection()
                                     try? await store.purchase(product)
@@ -171,7 +169,6 @@ struct PaywallView: View {
             }
             .padding(.bottom)
         }
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $showAuthSheet) {
             AuthenticationView {
                 // On success, dismiss sheet; purchase can be re-triggered by user

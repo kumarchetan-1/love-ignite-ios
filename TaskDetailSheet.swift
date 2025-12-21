@@ -3,6 +3,41 @@ import SwiftUI
 struct TaskDetailSheet: View {
     let task: Challenge
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) private var scheme
+    
+    private func displayTitle() -> String {
+        // If extraHot and has an imageName, derive a stylish name from the asset name:
+        // Expected pattern (renamed): ks_34_aphrodite or ks_54_dragon_pose
+        // Fallback still works for legacy ks_34_pose.
+        if task.category == .extraHot, let name = task.imageName {
+            let tokens = name
+                .replacingOccurrences(of: "-", with: "_")
+                .components(separatedBy: "_")
+                .filter { !$0.isEmpty }
+            
+            var words: [String] = []
+            var poseNumber: String?
+            
+            for t in tokens {
+                if t.lowercased() == "ks" || t.lowercased() == "pose" {
+                    continue
+                }
+                // number?
+                if Int(t) != nil {
+                    poseNumber = t
+                    continue
+                }
+                words.append(t.capitalized)
+            }
+            
+            if !words.isEmpty {
+                return "Try " + words.joined(separator: " ")
+            } else if let n = poseNumber {
+                return "Try Pose \(n)"
+            }
+        }
+        return task.title
+    }
 
     var body: some View {
         ZStack {
@@ -86,13 +121,13 @@ struct TaskDetailSheet: View {
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .tracking(2)
-                                .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(.white.opacity(0.6))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
                                 .background(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
                             
-                            Text(task.title)
-                                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                Text(displayTitle())
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(.white)
                                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
@@ -145,6 +180,16 @@ struct TaskDetailSheet: View {
 
 struct DifficultyBadge: View {
     let difficulty: Difficulty
+    
+    private func formattedPoseName(from imageName: String) -> String {
+        // Strip prefix like "ks_34_pose" and convert to a styled name
+        let trimmed = imageName
+            .replacingOccurrences(of: "ks_", with: "")
+            .replacingOccurrences(of: "_pose", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+        let number = trimmed.trimmingCharacters(in: .whitespaces)
+        return "Pose \(number)"
+    }
     
     var body: some View {
         HStack(spacing: 6) {

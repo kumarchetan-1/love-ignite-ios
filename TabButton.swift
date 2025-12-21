@@ -6,6 +6,7 @@ struct TabButton: View {
     let selected: Bool
     var namespace: Namespace.ID
     let action: () -> Void
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Button(action: {
@@ -17,12 +18,12 @@ struct TabButton: View {
             VStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(selected ? .white : .gray.opacity(0.6))
+                    .foregroundColor(selected ? activeColor : inactiveColor)
                     .scaleEffect(selected ? 1.1 : 1.0)
 
                 Text(title)
                     .font(.caption)
-                    .foregroundColor(selected ? .white : .gray.opacity(0.6))
+                    .foregroundColor(selected ? activeColor : inactiveColor)
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 16)
@@ -30,7 +31,7 @@ struct TabButton: View {
                 Group {
                     if selected {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.12))
+                            .fill(selectedBackground)
                             .matchedGeometryEffect(id: "TabBackground", in: namespace)
                     } else {
                         Color.clear
@@ -40,6 +41,18 @@ struct TabButton: View {
             .scaleEffect(selected ? 1.05 : 1.0)
         }
         .buttonStyle(ScaleButtonStyle())
+    }
+    
+    private var activeColor: Color {
+        scheme == .light ? Color.black : .white
+    }
+    
+    private var inactiveColor: Color {
+        scheme == .light ? Color.black.opacity(0.45) : .gray.opacity(0.6)
+    }
+    
+    private var selectedBackground: Color {
+        scheme == .light ? Color.black.opacity(0.08) : Color.white.opacity(0.12)
     }
 }
 

@@ -4,12 +4,13 @@ struct RootView: View {
     @EnvironmentObject var posterVM: PosterViewModel
     @State private var selection = 0
     @Namespace private var ns
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // background gradient
-                LinearGradient(gradient: Gradient(colors: [Color("bg1"), Color("bg2")]), startPoint: .top, endPoint: .bottom)
+                // background gradient respecting theme
+                LinearGradient(gradient: Gradient(colors: ThemePalette.backgroundColors(for: scheme)), startPoint: .top, endPoint: .bottom)
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -49,6 +50,5 @@ struct RootView: View {
             }
         }
         .ignoresSafeArea()
-        .preferredColorScheme(.dark)
     }
 }

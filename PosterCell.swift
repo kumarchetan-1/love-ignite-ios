@@ -6,6 +6,8 @@ struct PosterCell: View {
     let task: Challenge
     let onScratchReveal: () -> Void
     let onOpenTask: () -> Void
+    let redactedExplicit: Bool
+    @State private var isAnimating = false
 
     var body: some View {
         ZStack {
@@ -20,7 +22,26 @@ struct PosterCell: View {
                 )
                 .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
 
-            if vm.isRevealed(task) {
+            let isRevealed = vm.isRevealed(task) && !redactedExplicit
+            
+            if redactedExplicit && vm.isRevealed(task) {
+                // Redacted styling for previously revealed explicit cards
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color.gray.opacity(0.35), Color.gray.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                    )
+                    .overlay(
+                        VStack(spacing: 6) {
+                            Image(systemName: "eye.slash.fill")
+                                .foregroundColor(.white.opacity(0.8))
+                            Text("Hidden for privacy")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    )
+            } else if isRevealed {
                 let neonColor = NeonColors.color(for: task.difficulty)
                 Button { 
                     Haptics.selection()
@@ -40,6 +61,7 @@ struct PosterCell: View {
                                 .frame(width: 32, height: 32)
                                 .foregroundColor(neonColor)
                                 .neonGlow(neonColor)
+                                .blur(radius: (task.isLocked && !store.hasSubscription) ? 6 : 0)
                         } else {
                             // Icon based on category
                             Image(systemName: iconForCategory(task.category))
@@ -64,20 +86,38 @@ struct PosterCell: View {
                     removal: .opacity
                 ))
             } else {
-                // Not revealed — show scratch overlay
+                // Not revealed — show a tap-to-reveal card (single or double tap)
                 ZStack {
-                    ScratchUIViewRepresentable {
-                        Haptics.impact()
-                        onScratchReveal()
+                    Rectangle()
+                        .fill(LinearGradient(colors: [Color("cardBg1"), Color("cardBg2")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .overlay(Rectangle().stroke(Color.white.opacity(0.08)))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                    VStack(spacing: 6) {
+                        Image(systemName: "hand.tap.fill")
+                            .foregroundColor(.white.opacity(0.85))
+                            .font(.system(size: 20))
+                            .scaleEffect(isAnimating ? 1.15 : 1.0)
+                            .opacity(isAnimating ? 0.8 : 1.0)
+                        Text("\(task.number)")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                    // Overlay the number on top of the scratch view
-                    Text("\(task.number)")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
-                        .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                        .allowsHitTesting(false)
+                    .allowsHitTesting(false)
+                }
+                .onTapGesture {
+                    Haptics.impact()
+                    onScratchReveal()
+                }
+                .onTapGesture(count: 2) { // Also allow double tap
+                    Haptics.impact()
+                    onScratchReveal()
+                }
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                        isAnimating = true
+                    }
                 }
             }
 

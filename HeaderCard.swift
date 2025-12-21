@@ -119,16 +119,8 @@ struct HeaderCard: View {
                         if store.canEraseAll {
                             showEraseAlert = true
                         } else {
-                            // Trigger purchase flow
-                            Task {
-                                if let product = store.products.first(where: { $0.id == "com.yourapp.eraseall" }) {
-                                    try? await store.purchase(product)
-                                } else {
-                                    if let lifetime = store.products.first(where: { $0.id == "com.yourapp.lifetime" }) {
-                                         try? await store.purchase(lifetime)
-                                    }
-                                }
-                            }
+                            // Show the paywall (same flow as locked positions)
+                            store.showPaywall = true
                         }
                     }) {
                         HStack(spacing: 8) {

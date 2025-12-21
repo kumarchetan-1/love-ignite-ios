@@ -42,7 +42,7 @@ class PosterViewModel: ObservableObject {
         if let saved = storage.load([Challenge].self, for: Keys.tasks) {
             self.tasks = saved
         }
-        
+
         // Always refresh daily tasks on load (or could store date to persist for 24h)
         self.dailyTasks = TasksData.generateDailyTasks()
 
@@ -83,8 +83,8 @@ class PosterViewModel: ObservableObject {
     func reveal(task: Challenge) {
         // Idempotent reveal
         if !revealedIDs.contains(task.id) {
-            revealedIDs.insert(task.id)
-            checkAchievements()
+        revealedIDs.insert(task.id)
+        checkAchievements()
             triggerCelebrationIfNeeded()
         }
     }
@@ -94,7 +94,7 @@ class PosterViewModel: ObservableObject {
         if revealedIDs.count % 10 == 0 { 
             DispatchQueue.main.async {
                 withAnimation {
-                    self.showConfetti = true
+                self.showConfetti = true
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                     withAnimation {
@@ -160,7 +160,7 @@ class PosterViewModel: ObservableObject {
         }
         // 5. Kamasutra Master (all positions revealed)
         let revealedPositionsCount = revealedTasks.filter { $0.category == .extraHot }.count
-        if revealedPositionsCount >= 69, let idx = achievements.firstIndex(where: { $0.id == "a5" && !$0.unlocked }) {
+        if revealedPositionsCount >= 59, let idx = achievements.firstIndex(where: { $0.id == "a5" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true
         }
         // 6. True Romantic (All 200 Tasks)

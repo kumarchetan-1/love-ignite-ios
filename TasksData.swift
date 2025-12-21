@@ -42,7 +42,16 @@ struct TasksData {
             "Have a fondue night.", "Go camping in backyard.",
             "Write a seasonal bucket list.", "Go to a drive-in movie.",
             "Make a scrapbook.", "Go to trivia night.",
-            "Spa day at home.", "Visit botanical garden."
+            "Spa day at home.", "Visit botanical garden.",
+            // Respect, empathy, commitment, loyalty
+            "Write promises to each other and read them aloud.",
+            "List 3 ways you’ll support each other this month.",
+            "Share a recent worry and truly listen to each other.",
+            "Plan a small act of service your partner will appreciate.",
+            "Celebrate a personal win of your partner with a toast.",
+            "Check in on each other’s goals and offer help.",
+            "Revisit a past disagreement and thank each other for growth.",
+            "Draft a couple’s mission statement together."
         ] // Approx 70 items
 
         let locationTasks = [
@@ -53,7 +62,7 @@ struct TasksData {
             "Sneak a kiss in a fitting room.", "Hug tight at a train station.",
             "Touch feet under a desk.", "Share a drink with two straws.",
             "Kiss on a bridge.", "Lean on each other on a bus.",
-            "Selfie in a mirror.", "Slow dance in kitchen.",
+            "Take a goofy selfie in a crowd.", "Slow dance in kitchen.",
             "Carry partner across room.", "Sit on partner's lap.",
             "Walk in rain without umbrella.", "Kiss at top of hill.",
             "Kiss on Ferris wheel.", "Hold hands skating.",
@@ -64,9 +73,15 @@ struct TasksData {
             "Kiss on balcony.", "Cuddle in tent.",
             "Kiss in pool.", "Hold hands on plane.",
             "Kiss at midnight.", "Cuddle on rooftop.",
-            "Kiss in garden.", "Hold hands on rollercoaster.",
-            "Kiss in vineyard.", "Cuddle on beach."
-        ] // 40 items
+            "Pose for a sweet photo in a park.", "Cheer each other loudly at a game.",
+            "Compliment each other in front of friends.", "Swap jackets and laugh together.",
+            // Respect/loyalty in public
+            "Introduce your partner proudly to someone new.",
+            "Hold hands and thank each other after an event.",
+            "Stand up for your partner in a playful debate.",
+            "Leave a kind note in their bag before heading out.",
+            "Let them choose the restaurant and support it fully."
+        ] // refreshed outdoor-friendly set
         
         let questionTasks = [
             "Favorite memory of us?", "Biggest turn-on?",
@@ -104,6 +119,19 @@ struct TasksData {
             "Scalp massage.", "Sleep naked.",
             "Blindfold touch guessing game."
         ] // 21 items
+        
+        let extremePlayfulTasks = [
+            "Create a secret code word that means “now”.",
+            "Play a timer game: 60-second kiss, no words.",
+            "Blindfold and guess the scent on your skin.",
+            "Take turns giving 3 instructions, no talking.",
+            "Write a one-line fantasy and swap cards.",
+            "Slow dance in the dark, no music.",
+            "Trace a path from wrist to shoulder with eyes closed.",
+            "Share a roleplay idea and set a safe word.",
+            "Build a “do not disturb” fort with blankets.",
+            "Warm a towel and wrap their hands before a massage."
+        ]
 
         // 2. Pools for mix & match
         // We want every level to have a MIX of tasks + positions.
@@ -132,33 +160,52 @@ struct TasksData {
         var hardTasks: [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)] = []
         var extremeTasks: [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)] = []
         
-        // A. Distribute Positions (Strict Difficulty)
-        let easyPosRange = 1...17
-        let medPosRange = 18...34
-        let hardPosRange = 35...51
-        let extremePosRange = 52...69
+        // A. Distribute Positions (Strict Difficulty) with renamed assets
+        let easyAssets = [
+            "ks_01_cowgirl", "ks_02_doggy-style", "ks_03_standing-tiger", "ks_04_magic-mountain",
+            "ks_05_blow-job", "ks_06_nirvana-sex-pose", "ks_07_rocking-horse", "ks_08_sixty-nine-69",
+            "ks_09_the-indrani", "ks_10_lactose-licker", "ks_11_ribbon-sex", "ks_12_train-sex",
+            "ks_13_scissor-sex", "ks_14_barbell-sex", "ks_15_wall-sex-pose", "ks_16_cancer-sex-pose",
+            "ks_17_captain-sex-pose"
+        ]
+        let medAssets = [
+            "ks_18_london-bridge-sex-pose", "ks_19_ecstasy-sex-pose", "ks_20_basket-sex-pose",
+            "ks_21_prison-guard-sex-pose", "ks_22_aramel-sex-pose", "ks_23_frog-sex-pose",
+            "ks_24_chair-sex-pose", "ks_25_submissive-sex-pose", "ks_26_rainbow-sex-pose",
+            "ks_27_crucifixion-sex-pose", "ks_28_eiffel-tower-sex-pose", "ks_29_bud-sex-pose",
+            "ks_30_rose-sex-pose", "ks_31_straddle-sex-pose", "ks_32_cello-sex-pose",
+            "ks_33_whisper-sex-pose", "ks_34_aphrodite-sex-pose"
+        ]
+        let hardAssets = [
+            "ks_35_waterfall-sex-pose", "ks_36_workout-sex-pose", "ks_37_barbell-sex-pose",
+            "ks_38_wheelbarrow-sex-pose", "ks_39_narcissus-sex-pose", "ks_40_pisces-sex-pose",
+            "ks_41_dragon-sex-pose", "ks_42_spiderman-sex-pose", "ks_43_capricorn-sex-pose",
+            "ks_44_piledriver-sex-pose", "ks_45_yin-yang-sex-pose", "ks_46_accordion-sex-pose",
+            "ks_47_lock-sex-pose-1984891", "ks_48_italian-chandelier-sex-pose", "ks_49_gemini-sex-pose",
+            "ks_50_handstand-pyramid-pose", "ks_51_nun-sex-pose"
+        ]
+        let extremeAssets = [
+            "ks_52_bow-sex-pose", "ks_53_arch-sex-pose", "ks_54_superman-sex-pose",
+            "ks_55_angry-pirate-sex-pose", "ks_56_rabbit-ears-sex-pose", "ks_57_aquarius-sex-pose",
+            "ks_58_male-self-control", "ks_59_female-self-control"
+        ]
+        let allAssets = easyAssets + medAssets + hardAssets + extremeAssets
         
-        // Decide 20 unlocked positions globally
-        var unlockedIndices = Set<Int>()
-        while unlockedIndices.count < 20 {
-            unlockedIndices.insert(Int.random(in: 1...69))
-        }
-        
-        for i in 1...69 {
-            let img = String(format: "ks_%02d_pose", i)
-            let isLocked = !unlockedIndices.contains(i)
-            let taskTitle = "Try this position."
-            
-            if easyPosRange.contains(i) {
-                easyTasks.append((title: taskTitle, cat: .extraHot, diff: .easy, img: img, locked: isLocked))
-            } else if medPosRange.contains(i) {
-                mediumTasks.append((title: taskTitle, cat: .extraHot, diff: .medium, img: img, locked: isLocked))
-            } else if hardPosRange.contains(i) {
-                hardTasks.append((title: taskTitle, cat: .extraHot, diff: .hard, img: img, locked: isLocked))
-            } else if extremePosRange.contains(i) {
-                extremeTasks.append((title: taskTitle, cat: .extraHot, diff: .extreme, img: img, locked: isLocked))
+        // Unlock rules:
+        // - Easy/Medium: ~70% unlocked (lock ~30%)
+        // - Hard/Extreme: 50% locked as requested
+        func appendAssets(_ assets: [String], diff: Difficulty, bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], lockRatio: Double) {
+            for (idx, img) in assets.enumerated() {
+                let isLocked = Double.random(in: 0...1) < lockRatio
+                let taskTitle = "Try this position."
+                bucket.append((title: taskTitle, cat: .extraHot, diff: diff, img: img, locked: isLocked))
             }
         }
+        
+        appendAssets(easyAssets, diff: .easy, bucket: &easyTasks, lockRatio: 0.3)
+        appendAssets(medAssets, diff: .medium, bucket: &mediumTasks, lockRatio: 0.3)
+        appendAssets(hardAssets, diff: .hard, bucket: &hardTasks, lockRatio: 0.5)
+        appendAssets(extremeAssets, diff: .extreme, bucket: &extremeTasks, lockRatio: 0.5)
         
         // B. Fill remainder of each bucket (target 50) with Mixed Text Tasks
         let targetPerCategory = 50
@@ -176,7 +223,16 @@ struct TasksData {
         fillBucket(bucket: &easyTasks, difficulty: .easy)
         fillBucket(bucket: &mediumTasks, difficulty: .medium)
         fillBucket(bucket: &hardTasks, difficulty: .hard)
-        fillBucket(bucket: &extremeTasks, difficulty: .extreme)
+        // For extreme, if we run out of text tasks, use playful fallbacks
+        while extremeTasks.count < targetPerCategory {
+            if let task = allTextTasks.popLast() {
+                extremeTasks.append((title: task.title, cat: task.cat, diff: .extreme, img: nil, locked: false))
+            } else if let extra = extremePlayfulTasks.randomElement() {
+                extremeTasks.append((title: extra, cat: .techniques, diff: .extreme, img: nil, locked: false))
+            } else {
+                break
+            }
+        }
         
         // Shuffle within buckets so positions aren't all at the top
         easyTasks.shuffle()
