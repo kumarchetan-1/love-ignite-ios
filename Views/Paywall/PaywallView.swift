@@ -113,7 +113,11 @@ struct PaywallView: View {
                             Button(action: {
                                 Task {
                                     Haptics.selection()
-                                    try? await store.purchase(product)
+                                    do {
+                                        _ = try await store.purchase(product)
+                                    } catch {
+                                        print("Purchase failed: \(error)")
+                                    }
                                 }
                             }) {
                                 HStack {

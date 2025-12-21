@@ -4,8 +4,12 @@ struct TasksData {
     // We now separate the logic:
     // 1. generateGridTasks(count: 200) -> for the main grid
     // 2. generateDailyTasks() -> for the top 5 distinct tasks
+    // Note: position lock state is provided externally so we can preserve locks across relocks.
     
-    static func generateTasks(count: Int = 200) -> [Challenge] {
+    static func generateTasks(
+        count: Int = 200,
+        existingLocks: [String: Bool]? = nil
+    ) -> (tasks: [Challenge], locks: [String: Bool]) {
         // --- 1. Master Content Pools ---
         let romanticTasks = [
             "Cook a meal together from scratch.", "Write a love letter to each other.",
@@ -189,14 +193,21 @@ struct TasksData {
             "ks_55_angry-pirate-sex-pose", "ks_56_rabbit-ears-sex-pose", "ks_57_aquarius-sex-pose",
             "ks_58_male-self-control", "ks_59_female-self-control"
         ]
-        let allAssets = easyAssets + medAssets + hardAssets + extremeAssets
+        var lockState = existingLocks ?? [:]
         
         // Unlock rules:
         // - Easy/Medium: ~70% unlocked (lock ~30%)
         // - Hard/Extreme: 50% locked as requested
         func appendAssets(_ assets: [String], diff: Difficulty, bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], lockRatio: Double) {
-            for (idx, img) in assets.enumerated() {
-                let isLocked = Double.random(in: 0...1) < lockRatio
+            for img in assets {
+                let isLocked: Bool
+                if let stored = lockState[img] {
+                    isLocked = stored
+                } else {
+                    let computed = Double.random(in: 0...1) < lockRatio
+                    lockState[img] = computed
+                    isLocked = computed
+                }
                 let taskTitle = "Try this position."
                 bucket.append((title: taskTitle, cat: .extraHot, diff: diff, img: img, locked: isLocked))
             }
@@ -261,7 +272,7 @@ struct TasksData {
             ))
         }
         
-        return finalTasks
+        return (finalTasks, lockState)
     }
     
     // --- New: Tasks of the Day (5 Distinct, Indoor, Intimate) ---

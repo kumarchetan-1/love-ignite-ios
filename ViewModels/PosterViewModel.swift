@@ -16,6 +16,7 @@ class PosterViewModel: ObservableObject {
         static let tasks = "tasks_v2"
         static let achievements = "achievements_v1"
         static let revealed = "revealed_v1"
+        static let positionLocks = "positionLocks_v1"
     }
 
     init(storage: StorageServiceProtocol = StorageService.shared) {
@@ -35,12 +36,22 @@ class PosterViewModel: ObservableObject {
     }
 
     func loadSampleDataIfNeeded() {
+        let savedLocks = storage.load([String: Bool].self, for: Keys.positionLocks)
+        
         if storage.load([Challenge].self, for: Keys.tasks) == nil {
-            let arr = TasksData.generateTasks(count: 200)
-            storage.save(arr, for: Keys.tasks)
-        }
-        if let saved = storage.load([Challenge].self, for: Keys.tasks) {
+            let generated = TasksData.generateTasks(count: 200, existingLocks: savedLocks)
+            storage.save(generated.tasks, for: Keys.tasks)
+            storage.save(generated.locks, for: Keys.positionLocks)
+            self.tasks = generated.tasks
+        } else if let saved = storage.load([Challenge].self, for: Keys.tasks) {
             self.tasks = saved
+            // If locks missing, regenerate to establish consistent locks
+            if savedLocks == nil {
+                let generated = TasksData.generateTasks(count: 200, existingLocks: nil)
+                storage.save(generated.tasks, for: Keys.tasks)
+                storage.save(generated.locks, for: Keys.positionLocks)
+                self.tasks = generated.tasks
+            }
         }
 
         // Always refresh daily tasks on load (or could store date to persist for 24h)
@@ -125,10 +136,12 @@ class PosterViewModel: ObservableObject {
         revealedIDs.removeAll()
         achievements.indices.forEach { achievements[$0].unlocked = false }
         
-        // Randomize tasks and positions again
-        let newTasks = TasksData.generateTasks(count: 200) // Updated count
-        self.tasks = newTasks
-        storage.save(newTasks, for: Keys.tasks)
+        // Regenerate tasks but preserve position lock map
+        let savedLocks = storage.load([String: Bool].self, for: Keys.positionLocks)
+        let generated = TasksData.generateTasks(count: 200, existingLocks: savedLocks)
+        self.tasks = generated.tasks
+        storage.save(generated.tasks, for: Keys.tasks)
+        storage.save(generated.locks, for: Keys.positionLocks)
         
         saveProgress()
     }
