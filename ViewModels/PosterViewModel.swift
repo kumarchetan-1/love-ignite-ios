@@ -8,6 +8,7 @@ class PosterViewModel: ObservableObject {
     @Published var revealedIDs: Set<String> = []
     @Published var achievements: [Achievement] = []
     @Published var showConfetti: Bool = false
+    @Published var recentlyUnlocked: Achievement?
 
     private var storage: StorageServiceProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -149,6 +150,7 @@ class PosterViewModel: ObservableObject {
     private func checkAchievements() {
         let totalReveals = revealedIDs.count
         var changed = false
+        var newlyUnlocked: Achievement?
         
         let revealedTasks = tasks.filter { revealedIDs.contains($0.id) }
         func categoryCount(_ cat: TaskCategory) -> Int {
@@ -157,72 +159,75 @@ class PosterViewModel: ObservableObject {
         
         // 1. First Spark (1 task)
         if totalReveals > 0, let idx = achievements.firstIndex(where: { $0.id == "a1" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 2. Heating Up (10 tasks)
         if totalReveals >= 10, let idx = achievements.firstIndex(where: { $0.id == "a2" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 3. Halfway There (50 tasks)
         if totalReveals >= 50, let idx = achievements.firstIndex(where: { $0.id == "a3" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 4. Passionate Pro (100 tasks)
         if totalReveals >= 100, let idx = achievements.firstIndex(where: { $0.id == "a4" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 5. Kamasutra Master (all positions revealed)
         let revealedPositionsCount = revealedTasks.filter { $0.category == .extraHot }.count
         if revealedPositionsCount >= 59, let idx = achievements.firstIndex(where: { $0.id == "a5" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 6. True Romantic (All 200 Tasks)
         if totalReveals >= 200, let idx = achievements.firstIndex(where: { $0.id == "a6" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 7. Flirty Twenty
         if totalReveals >= 20, let idx = achievements.firstIndex(where: { $0.id == "a7" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 8. Date Night Darling (20 Romantic/general)
         if categoryCount(.general) >= 20, let idx = achievements.firstIndex(where: { $0.id == "a8" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 9. Spicy Explorer (20 Extra Hot)
         if categoryCount(.extraHot) >= 20, let idx = achievements.firstIndex(where: { $0.id == "a9" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 10. Question Tease (15 Questions)
         if categoryCount(.questions) >= 15, let idx = achievements.firstIndex(where: { $0.id == "a10" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 11. City of Love (15 Locations)
         if categoryCount(.locations) >= 15, let idx = achievements.firstIndex(where: { $0.id == "a11" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 12. Intimate Whisper (10 Techniques)
         if categoryCount(.techniques) >= 10, let idx = achievements.firstIndex(where: { $0.id == "a12" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 13. Centurion of Love (150 reveals)
         if totalReveals >= 150, let idx = achievements.firstIndex(where: { $0.id == "a13" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 14. Full House (175 reveals)
         if totalReveals >= 175, let idx = achievements.firstIndex(where: { $0.id == "a14" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 15. All In Lover (190 reveals)
         if totalReveals >= 190, let idx = achievements.firstIndex(where: { $0.id == "a15" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 16. Heart Collector (all achievements)
         if achievements.dropLast().allSatisfy({ $0.unlocked }), let idx = achievements.firstIndex(where: { $0.id == "a16" && !$0.unlocked }) {
-            achievements[idx].unlocked = true; changed = true
+            achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         
         if changed {
             storage.save(achievements, for: Keys.achievements)
+            if let unlocked = newlyUnlocked {
+                triggerAchievementToast(unlocked)
+            }
         }
     }
 
@@ -230,6 +235,20 @@ class PosterViewModel: ObservableObject {
         // Re-load to sync changes from iCloud, merging with current state
         DispatchQueue.main.async { [weak self] in
             self?.loadProgress()
+        }
+    }
+    
+    private func triggerAchievementToast(_ achievement: Achievement) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                self.recentlyUnlocked = achievement
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    self.recentlyUnlocked = nil
+                }
+            }
         }
     }
 }

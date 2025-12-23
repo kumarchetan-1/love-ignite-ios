@@ -19,7 +19,7 @@ enum Difficulty: String, Codable {
     case easy, medium, hard, extreme
 }
 
-struct Achievement: Identifiable, Codable {
+struct Achievement: Identifiable, Codable, Equatable {
     let id: String
     var title: String
     var unlocked: Bool

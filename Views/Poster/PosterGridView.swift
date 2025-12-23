@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct PosterGridView: View {
     @EnvironmentObject var vm: PosterViewModel
@@ -59,32 +58,29 @@ struct PosterGridView: View {
     // Returns: (displayTask, redactedExplicit)
     private var visibleTasks: [(Challenge, Bool)] {
         vm.tasks.map { task in
-            // Determine if we need to replace extraHot
-            let missingAsset = (task.category == .extraHot && (task.imageName == nil || UIImage(named: task.imageName!) == nil))
             let shouldReplace = hideExplicit && task.category == .extraHot
             
-            if task.category == .extraHot && (missingAsset || shouldReplace) {
-                // Choose indoor/outdoor gesture
-                let useOutdoor = Bool.random()
-                let gesture = (useOutdoor ? outdoorGestures.randomElement() : indoorGestures.randomElement())
-                    ?? "Share a gentle love gesture tonight."
-                let newCategory: TaskCategory = useOutdoor ? .locations : .general
-                
-                let replaced = Challenge(
-                    id: task.id,
-                    number: task.number,
-                    title: gesture,
-                    category: newCategory,
-                    difficulty: task.difficulty,
-                    hint: "Love Gesture",
-                    imageName: nil,
-                    isLocked: false
-                )
-                // redacted if user explicitly hides, not for missing assets
-                return (replaced, shouldReplace)
-            } else {
+            guard shouldReplace else {
                 return (task, false)
             }
+            
+            // Deterministic replacement so SwiftUI doesn't recompute random content on each render
+            let useOutdoor = task.id.hashValue.isMultiple(of: 2)
+            let gesture = (useOutdoor ? outdoorGestures.randomElement() : indoorGestures.randomElement())
+                ?? "Share a gentle love gesture tonight."
+            let newCategory: TaskCategory = useOutdoor ? .locations : .general
+            
+            let replaced = Challenge(
+                id: task.id,
+                number: task.number,
+                title: gesture,
+                category: newCategory,
+                difficulty: task.difficulty,
+                hint: "Love Gesture",
+                imageName: nil,
+                isLocked: false
+            )
+            return (replaced, true)
         }
     }
     

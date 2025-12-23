@@ -47,6 +47,14 @@ struct RootView: View {
                         .ignoresSafeArea()
                         .transition(.opacity)
                 }
+                
+                if let unlocked = posterVM.recentlyUnlocked {
+                    ZStack {
+                        AchievementToast(achievement: unlocked)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                    .animation(.spring(response: 0.45, dampingFraction: 0.82), value: posterVM.recentlyUnlocked)
+                }
             }
         }
         .ignoresSafeArea()
