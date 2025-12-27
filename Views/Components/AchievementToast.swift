@@ -44,16 +44,7 @@ struct AchievementToast: View {
             .padding(.horizontal, 18)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(scheme == .light ? 0.12 : 0.08),
-                                Color.white.opacity(scheme == .light ? 0.2 : 0.14)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(scheme == .light ? Color.white : Color.black.opacity(0.85)) // opaque background for clarity
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(LinearGradient(colors: [.yellow.opacity(0.6), .orange.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.2)
