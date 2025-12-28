@@ -4,6 +4,7 @@ struct PosterCell: View {
     @EnvironmentObject var vm: PosterViewModel
     @EnvironmentObject var store: StoreKitManager
     let task: Challenge
+    let displayNumber: Int? // Overrides task.number if provided
     let onScratchReveal: () -> Void
     let onOpenTask: () -> Void
     let redactedExplicit: Bool
@@ -11,7 +12,7 @@ struct PosterCell: View {
 
     var body: some View {
         ZStack {
-            // Card Background
+            // ... (keep card background)
             RoundedRectangle(cornerRadius: 16)
                 .fill(vm.isRevealed(task) ? 
                       LinearGradient(colors: [Color("revealed1"), Color("revealed2")], startPoint: .topLeading, endPoint: .bottomTrailing) :
@@ -25,7 +26,7 @@ struct PosterCell: View {
             let isRevealed = vm.isRevealed(task) && !redactedExplicit
             
             if redactedExplicit && vm.isRevealed(task) {
-                // Redacted styling for previously revealed explicit cards
+                // ... redacted styling ...
                 RoundedRectangle(cornerRadius: 16)
                     .fill(LinearGradient(colors: [Color.gray.opacity(0.35), Color.gray.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .overlay(
@@ -45,7 +46,6 @@ struct PosterCell: View {
                 let neonColor = NeonColors.color(for: task.difficulty)
                 Button { 
                     Haptics.selection()
-                    // lock check: uses the isLocked property now
                     if task.isLocked && !store.hasSubscription {
                         store.showPaywall = true
                         return
@@ -63,14 +63,12 @@ struct PosterCell: View {
                                 .neonGlow(neonColor)
                                 .blur(radius: (task.isLocked && !store.hasSubscription) ? 6 : 0)
                         } else {
-                            // Icon based on category
                             Image(systemName: iconForCategory(task.category))
                                 .font(.system(size: 22))
                                 .foregroundColor(neonColor)
                                 .neonGlow(neonColor)
                         }
                         
-                        // Small label
                         Text(shortLabel(for: task))
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.white.opacity(0.9))
@@ -86,7 +84,6 @@ struct PosterCell: View {
                     removal: .opacity
                 ))
             } else {
-                // Not revealed — show a tap-to-reveal card (single or double tap)
                 ZStack {
                     Rectangle()
                         .fill(LinearGradient(colors: [Color("cardBg1"), Color("cardBg2")], startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -99,7 +96,7 @@ struct PosterCell: View {
                             .font(.system(size: 20))
                             .scaleEffect(isAnimating ? 1.15 : 1.0)
                             .opacity(isAnimating ? 0.8 : 1.0)
-                        Text("\(task.number)")
+                        Text("\(displayNumber ?? task.number)")
                             .font(.system(size: 22, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
@@ -110,7 +107,7 @@ struct PosterCell: View {
                     Haptics.impact()
                     onScratchReveal()
                 }
-                .onTapGesture(count: 2) { // Also allow double tap
+                .onTapGesture(count: 2) {
                     Haptics.impact()
                     onScratchReveal()
                 }
@@ -120,8 +117,7 @@ struct PosterCell: View {
                     }
                 }
             }
-
-            // Lock icon overlay for revealed locked items
+            // ... (keep lock icon overlay)
             if vm.isRevealed(task) && task.isLocked && !store.hasSubscription {
                  VStack {
                     HStack {
@@ -148,6 +144,7 @@ struct PosterCell: View {
         case .questions: return "bubble.right.fill"
         case .techniques: return "sparkles"
         case .extraHot: return "flame.fill"
+        case .loveQnA: return "questionmark.bubble.fill"
         }
     }
     
@@ -156,6 +153,7 @@ struct PosterCell: View {
         case .extraHot: return "Position"
         case .questions: return "Ask"
         case .locations: return "Go"
+        case .loveQnA: return "QnA"
         default: return "Task"
         }
     }

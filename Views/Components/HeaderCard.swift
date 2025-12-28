@@ -6,6 +6,7 @@ struct HeaderCard: View {
     let total: Int
     @EnvironmentObject var vm: PosterViewModel
     @EnvironmentObject var store: StoreKitManager
+    @Environment(\.colorScheme) private var scheme
     
     @State private var showRelockAlert = false
     @State private var showEraseAlert = false
@@ -18,146 +19,131 @@ struct HeaderCard: View {
 
     var body: some View {
         ZStack {
-            // Background with subtle gradient
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            // Modern Floating Card Background
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.4), Color.black.opacity(0.2)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    scheme == .dark ?
+                        LinearGradient(colors: [Color.black.opacity(0.4), Color.black.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing) :
+                        LinearGradient(colors: [Color.white, Color.white.opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
-                .background(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(LinearGradient(colors: [.white.opacity(0.1), .white.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+                .shadow(
+                    color: scheme == .dark ? .black.opacity(0.3) : Color.pink.opacity(0.12),
+                    radius: 20, x: 0, y: 10
                 )
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(
+                            scheme == .dark ?
+                                LinearGradient(colors: [.white.opacity(0.15), .clear], startPoint: .topLeading, endPoint: .bottomTrailing) :
+                                LinearGradient(colors: [.white, Color.pink.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            lineWidth: 1.5
+                        )
+                )
 
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 // Top Row: Title + Percentage
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Love Journey")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundColor(.white.opacity(0.9))
-                            .tracking(0.5)
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .foregroundColor(scheme == .dark ? .white : Color.pink.opacity(0.9))
                         
-                        Text("\(revealedCount) of \(total) unlocked")
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.5))
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.caption2)
+                            Text("\(revealedCount) of \(total) discovered")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(scheme == .dark ? .white.opacity(0.5) : Color.black.opacity(0.4))
                     }
                     
                     Spacer()
                     
-                    // Circular Percentage Badge
+                    // Modern Progress Ring
                     ZStack {
                         Circle()
-                            .stroke(Color.white.opacity(0.1), lineWidth: 4)
-                            .frame(width: 44, height: 44)
+                            .stroke(scheme == .dark ? Color.white.opacity(0.08) : Color.pink.opacity(0.05), lineWidth: 6)
+                            .frame(width: 54, height: 54)
                         
                         Circle()
                             .trim(from: 0, to: progress)
                             .stroke(
-                                LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                                LinearGradient(colors: [.pink, .purple, .orange], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
                             )
-                            .frame(width: 44, height: 44)
+                            .frame(width: 54, height: 54)
                             .rotationEffect(.degrees(-90))
-                            .animation(.spring(response: 0.6, dampingFraction: 0.7), value: progress)
+                            .shadow(color: .pink.opacity(0.3), radius: 4, x: 0, y: 2)
                         
                         Text("\(Int(progress * 100))%")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: 14, weight: .heavy, design: .rounded))
+                            .foregroundColor(scheme == .dark ? .white : .black.opacity(0.8))
                     }
                 }
                 
                 // Aesthetic Progress Bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(height: 6)
-                        
-                        Capsule()
-                            .fill(
-                                LinearGradient(colors: [Color.pink, Color.purple, Color.blue], startPoint: .leading, endPoint: .trailing)
-                            )
-                            .frame(width: geo.size.width * CGFloat(progress), height: 6)
-                            .shadow(color: Color.pink.opacity(0.5), radius: 4, x: 0, y: 0) // Glow effect
-                            .animation(.spring(response: 0.6, dampingFraction: 0.7), value: progress)
+                VStack(spacing: 6) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.04))
+                                .frame(height: 8)
+                            
+                            Capsule()
+                                .fill(
+                                    LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
+                                )
+                                .frame(width: geo.size.width * CGFloat(progress), height: 8)
+                                .shadow(color: .pink.opacity(0.4), radius: 6, x: 0, y: 0)
+                        }
                     }
+                    .frame(height: 8)
                 }
-                .frame(height: 6)
                 
-                // Action Buttons
+                // Refined Action Buttons
                 HStack(spacing: 12) {
-                    // 1. Relock Memories (Standard Reset)
                     if revealedCount > 0 {
-                        Button(action: {
+                        HeaderActionButton(icon: "arrow.counterclockwise", title: "Relock", color: .gray) {
                             showRelockAlert = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .font(.system(size: 14, weight: .bold))
-                                Text("Relock")
-                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            }
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 18)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                            )
                         }
                     }
                     
-                    // 2. Erase All (Premium Reset)
-                    Button(action: {
+                    HeaderActionButton(
+                        icon: store.canEraseAll ? "trash.fill" : "lock.fill",
+                        title: "Erase All",
+                        color: store.canEraseAll ? .red : .orange,
+                        isLocked: !store.canEraseAll
+                    ) {
                         if store.canEraseAll {
                             showEraseAlert = true
                         } else {
-                            // Show the paywall (same flow as locked positions)
                             store.showPaywall = true
                         }
-                    }) {
-                        HStack(spacing: 8) {
-                            if !store.canEraseAll {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.yellow)
-                            } else {
-                                Image(systemName: "trash.fill")
-                                    .font(.system(size: 12))
-                            }
-                            
-                            Text("Erase All")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        }
-                        .foregroundColor(store.canEraseAll ? .red.opacity(0.8) : .white.opacity(0.7))
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 18)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(store.canEraseAll ? Color.red.opacity(0.3) : Color.yellow.opacity(0.3), lineWidth: 0.5)
-                        )
                     }
                 }
                 .padding(.top, 4)
 
                 // --- Daily Tasks Section ---
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Tasks of the Day")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
-                        .padding(.leading, 4)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("Daily Selection")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundColor(scheme == .dark ? .white.opacity(0.9) : .black.opacity(0.7))
+                        
+                        Spacer()
+                        
+                        Text("NEW")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.pink)
+                            .clipShape(Capsule())
+                    }
+                    .padding(.horizontal, 4)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: 14) {
                             ForEach(vm.dailyTasks) { task in
                                 DailyTaskCard(task: task)
                                     .onTapGesture {
@@ -167,12 +153,12 @@ struct HeaderCard: View {
                             }
                         }
                         .padding(.horizontal, 4)
-                        .padding(.bottom, 4) // Space for shadow
+                        .padding(.bottom, 8)
                     }
                 }
-                .padding(.top, 12)
+                .padding(.top, 8)
             }
-            .padding(16)
+            .padding(20)
         }
         // Alert for Relock
         .alert("Relock All Memories?", isPresented: $showRelockAlert) {
@@ -208,24 +194,31 @@ struct HeaderCard: View {
 
 struct DailyTaskCard: View {
     let task: Challenge
+    @Environment(\.colorScheme) private var scheme
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: "sparkles")
-                    .font(.caption)
-                    .foregroundColor(.yellow)
+                Circle()
+                    .fill(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white)
+                    )
                 Spacer()
-                Text("Daily")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.white.opacity(0.6))
-                    .padding(4)
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(4)
+                Text("DAILY")
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.black.opacity(0.1))
+                    .clipShape(Capsule())
             }
             
             Text(task.title)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
@@ -233,22 +226,58 @@ struct DailyTaskCard: View {
                 
             Spacer(minLength: 0)
         }
-        .padding(12)
-        .frame(width: 130, height: 110)
+        .padding(14)
+        .frame(width: 145, height: 120)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.purple.opacity(0.6), Color.blue.opacity(0.5)],
+                        colors: scheme == .dark ?
+                            [Color.purple.opacity(0.7), Color.blue.opacity(0.6)] :
+                            [Color.pink.opacity(0.8), Color.purple.opacity(0.7)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(LinearGradient(colors: [.white.opacity(0.3), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
         )
-        .shadow(color: Color.purple.opacity(0.3), radius: 6, x: 0, y: 3)
+        .shadow(
+            color: (scheme == .dark ? Color.purple : Color.pink).opacity(0.2),
+            radius: 8, x: 0, y: 4
+        )
+    }
+}
+
+struct HeaderActionButton: View {
+    let icon: String
+    let title: String
+    let color: Color
+    var isLocked: Bool = false
+    let action: () -> Void
+    @Environment(\.colorScheme) private var scheme
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .bold))
+                Text(title)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+            }
+            .foregroundColor(isLocked ? (scheme == .dark ? .white.opacity(0.6) : .black.opacity(0.5)) : (scheme == .dark ? color.opacity(0.9) : color))
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(
+                Capsule()
+                    .fill(scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isLocked ? Color.yellow.opacity(0.3) : color.opacity(0.2), lineWidth: 1)
+            )
+        }
     }
 }

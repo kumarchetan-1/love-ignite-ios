@@ -2,28 +2,63 @@ import SwiftUI
 
 struct FilterTabs: View {
     @Binding var selectedTab: PosterGridView.FilterTab
+    @Environment(\.colorScheme) private var scheme
     
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(PosterGridView.FilterTab.allCases) { tab in
-                Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                        selectedTab = tab
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(orderedTabs) { tab in
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                            selectedTab = tab
+                        }
+                    } label: {
+                        Text(tab.rawValue)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(textColor(for: tab))
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(backgroundColor(for: tab))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(borderColor(for: tab), lineWidth: 1)
+                            )
                     }
-                } label: {
-                    Text(tab.rawValue)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(selectedTab == tab ? .white : .white.opacity(0.7))
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedTab == tab ? Color.pink.opacity(0.9) : Color.white.opacity(0.08))
-                        )
                 }
+                Spacer(minLength: 0)
             }
-            Spacer()
         }
+    }
+    
+    private func textColor(for tab: PosterGridView.FilterTab) -> Color {
+        if selectedTab == tab {
+            return .white
+        } else {
+            return scheme == .dark ? .white.opacity(0.7) : Color.pink.opacity(0.8)
+        }
+    }
+    
+    private func backgroundColor(for tab: PosterGridView.FilterTab) -> Color {
+        if selectedTab == tab {
+            return Color.pink.opacity(0.9)
+        } else {
+            return scheme == .dark ? Color.white.opacity(0.08) : Color.pink.opacity(0.06)
+        }
+    }
+    
+    private func borderColor(for tab: PosterGridView.FilterTab) -> Color {
+        if selectedTab == tab {
+            return .clear
+        } else {
+            return scheme == .dark ? .clear : Color.pink.opacity(0.1)
+        }
+    }
+    
+    private var orderedTabs: [PosterGridView.FilterTab] {
+        [.all, .qna, .indoor, .outdoor, .kama]
     }
 }
 

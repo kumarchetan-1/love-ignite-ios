@@ -40,15 +40,23 @@ class PosterViewModel: ObservableObject {
         let savedLocks = storage.load([String: Bool].self, for: Keys.positionLocks)
         
         if storage.load([Challenge].self, for: Keys.tasks) == nil {
-            let generated = TasksData.generateTasks(count: 200, existingLocks: savedLocks)
+            let generated = TasksData.generateTasks(count: 236, existingLocks: savedLocks)
             storage.save(generated.tasks, for: Keys.tasks)
             storage.save(generated.locks, for: Keys.positionLocks)
             self.tasks = generated.tasks
         } else if let saved = storage.load([Challenge].self, for: Keys.tasks) {
-            self.tasks = saved
+            if saved.count < 236 {
+                // Migrate to 236 tasks if previously 200
+                let generated = TasksData.generateTasks(count: 236, existingLocks: savedLocks)
+                storage.save(generated.tasks, for: Keys.tasks)
+                storage.save(generated.locks, for: Keys.positionLocks)
+                self.tasks = generated.tasks
+            } else {
+                self.tasks = saved
+            }
             // If locks missing, regenerate to establish consistent locks
             if savedLocks == nil {
-                let generated = TasksData.generateTasks(count: 200, existingLocks: nil)
+                let generated = TasksData.generateTasks(count: 236, existingLocks: nil)
                 storage.save(generated.tasks, for: Keys.tasks)
                 storage.save(generated.locks, for: Keys.positionLocks)
                 self.tasks = generated.tasks
@@ -139,7 +147,7 @@ class PosterViewModel: ObservableObject {
         
         // Regenerate tasks but preserve position lock map
         let savedLocks = storage.load([String: Bool].self, for: Keys.positionLocks)
-        let generated = TasksData.generateTasks(count: 200, existingLocks: savedLocks)
+        let generated = TasksData.generateTasks(count: 236, existingLocks: savedLocks)
         self.tasks = generated.tasks
         storage.save(generated.tasks, for: Keys.tasks)
         storage.save(generated.locks, for: Keys.positionLocks)

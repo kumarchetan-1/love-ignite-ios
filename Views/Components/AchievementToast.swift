@@ -27,16 +27,20 @@ struct AchievementToast: View {
                         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: animate)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Achievement Unlocked")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.8))
-                    
-                    Text(achievement.title)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [.white, .yellow.opacity(0.9)], startPoint: .leading, endPoint: .trailing))
-                        .lineLimit(1)
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Achievement Unlocked")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(scheme == .dark ? .white.opacity(0.8) : .black.opacity(0.6))
+                
+                Text(achievement.title)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(
+                        scheme == .dark ?
+                            LinearGradient(colors: [.white, .yellow.opacity(0.9)], startPoint: .leading, endPoint: .trailing) :
+                            LinearGradient(colors: [Color.pink, Color.purple], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .lineLimit(1)
+            }
                 
                 Spacer(minLength: 0)
             }

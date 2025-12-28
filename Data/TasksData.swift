@@ -7,7 +7,7 @@ struct TasksData {
     // Note: position lock state is provided externally so we can preserve locks across relocks.
     
     static func generateTasks(
-        count: Int = 200,
+        count: Int = 236,
         existingLocks: [String: Bool]? = nil
     ) -> (tasks: [Challenge], locks: [String: Bool]) {
         // --- 1. Master Content Pools ---
@@ -110,6 +110,45 @@ struct TasksData {
             "Favorite dessert?", "Favorite drink?"
         ] // 40 items
 
+        let loveQnA36 = [
+            "Given the choice of anyone in the world, whom would you want as a dinner guest?",
+            "Would you like to be famous? In what way?",
+            "Before making a telephone call, do you ever rehearse what you are going to say? Why?",
+            "What would constitute a perfect day for you?",
+            "When did you last sing to yourself? To someone else?",
+            "If you could live to 90 with either the mind or body of a 30-year-old for the last 60 years, which would you choose?",
+            "Do you have a secret hunch about how you will die?",
+            "Name three things you and your partner appear to have in common.",
+            "For what in your life do you feel most grateful?",
+            "If you could change anything about the way you were raised, what would it be?",
+            "Take four minutes and tell your partner your life story in as much detail as possible.",
+            "If you could wake up tomorrow having gained any one quality or ability, what would it be?",
+            "If a crystal ball could tell you the truth about yourself, your life, the future, or anything else, what would you want to know?",
+            "Is there something that you've dreamed of doing for a long time? Why haven't you done it?",
+            "What is the greatest accomplishment of your life?",
+            "What do you value most in a friendship?",
+            "What is your most treasured memory?",
+            "What is your most terrible memory?",
+            "If you knew that in one year you would die suddenly, would you change anything about the way you are now living? Why?",
+            "What does friendship mean to you?",
+            "What roles do love and affection play in your life?",
+            "Alternate sharing something you consider a positive characteristic of your partner. Share a total of five items.",
+            "How close and warm is your family? Do you feel your childhood was happier than most other people's?",
+            "How do you feel about your relationship with your mother?",
+            "Make three true \"we\" statements each. For instance, \"We are both in this room feeling...\"",
+            "Complete this sentence: \"I wish I had someone with whom I could share...\"",
+            "If you were going to become a close friend with your partner, please share what would be important for them to know.",
+            "Tell your partner what you like about them; be very honest this time, saying things that you might not say to someone you've just met.",
+            "Share an embarrassing moment in your life.",
+            "When did you last cry in front of another person? By yourself?",
+            "Tell your partner something that you like about them already.",
+            "What, if anything, is too serious to be joked about?",
+            "If you were to die this evening with no opportunity to communicate with anyone, what would you most regret not having told someone? Why haven't you told them yet?",
+            "Your house, containing everything you own, catches fire. After saving your loved ones and pets, you have time to safely make a final dash to save any one item. What would it be? Why?",
+            "Of all the people in your family, whose death would you find most disturbing? Why?",
+            "Share a personal problem and ask your partner's advice on how they might handle it. Then, ask your partner to reflect on how you seem to be feeling about the problem you have chosen."
+        ]
+
         let intimateTasks = [
             "Blindfold and feed partner.", "Sensual hand massage.",
             "Whisper naughty secret.", "Strip card game.",
@@ -195,6 +234,9 @@ struct TasksData {
         ]
         var lockState = existingLocks ?? [:]
         
+        // Distribute the 36 "Love Questions": 9 for each of the 4 buckets
+        var qnaPool = loveQnA36.shuffled()
+        
         // Unlock rules:
         // - Easy/Medium: ~70% unlocked (lock ~30%)
         // - Hard/Extreme: 50% locked as requested
@@ -218,8 +260,22 @@ struct TasksData {
         appendAssets(hardAssets, diff: .hard, bucket: &hardTasks, lockRatio: 0.5)
         appendAssets(extremeAssets, diff: .extreme, bucket: &extremeTasks, lockRatio: 0.5)
         
-        // B. Fill remainder of each bucket (target 50) with Mixed Text Tasks
-        let targetPerCategory = 50
+        // Distribute 9 QnA tasks to each bucket
+        func appendQnA(to bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], diff: Difficulty) {
+            for _ in 0..<9 {
+                if let q = qnaPool.popLast() {
+                    bucket.append((title: q, cat: .loveQnA, diff: diff, img: nil, locked: false))
+                }
+            }
+        }
+        
+        appendQnA(to: &easyTasks, diff: .easy)
+        appendQnA(to: &mediumTasks, diff: .medium)
+        appendQnA(to: &hardTasks, diff: .hard)
+        appendQnA(to: &extremeTasks, diff: .extreme)
+
+        // B. Fill remainder of each bucket (target 59) with Mixed Text Tasks
+        let targetPerCategory = 59
         
         func fillBucket(bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], difficulty: Difficulty) {
             while bucket.count < targetPerCategory {
@@ -251,18 +307,18 @@ struct TasksData {
         hardTasks.shuffle()
         extremeTasks.shuffle()
         
-        // Combine in order
+        // Combine in order (New 236 total: 59 per category)
         let allSorted = easyTasks + mediumTasks + hardTasks + extremeTasks
         
         var finalTasks: [Challenge] = []
         for (index, item) in allSorted.enumerated() {
             let id = "task_\(index)"
-            // Use index + 1 for counting 1..200
+            // Use index + 1 for counting 1..236
             let number = index + 1
             
             finalTasks.append(Challenge(
                 id: id,
-                number: number, // Counts from 1 to 200
+                number: number,
                 title: item.title,
                 category: item.cat,
                 difficulty: item.diff,

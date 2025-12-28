@@ -164,6 +164,7 @@ struct TaskDetailSheet: View {
         case .questions: return "Deep Question"
         case .extraHot: return "Kamasutra Position"
         case .techniques: return "Technique"
+        case .loveQnA: return "Love Questions"
         }
     }
     
@@ -174,6 +175,7 @@ struct TaskDetailSheet: View {
         case .questions: return "quote.bubble.fill"
         case .techniques: return "sparkles"
         case .extraHot: return "flame.fill"
+        case .loveQnA: return "questionmark.bubble.fill"
         }
     }
 }

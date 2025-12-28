@@ -11,6 +11,7 @@ struct PosterGridView: View {
     
     enum FilterTab: String, CaseIterable, Identifiable {
         case all = "All"
+        case qna = "QnA"
         case indoor = "Indoor"
         case outdoor = "Outdoor"
         case kama = "Kamasutra Positions"
@@ -66,20 +67,20 @@ struct PosterGridView: View {
             
             // Deterministic replacement so SwiftUI doesn't recompute random content on each render
             let useOutdoor = task.id.hashValue.isMultiple(of: 2)
-            let gesture = (useOutdoor ? outdoorGestures.randomElement() : indoorGestures.randomElement())
-                ?? "Share a gentle love gesture tonight."
-            let newCategory: TaskCategory = useOutdoor ? .locations : .general
-            
-            let replaced = Challenge(
-                id: task.id,
-                number: task.number,
-                title: gesture,
-                category: newCategory,
-                difficulty: task.difficulty,
-                hint: "Love Gesture",
-                imageName: nil,
-                isLocked: false
-            )
+                let gesture = (useOutdoor ? outdoorGestures.randomElement() : indoorGestures.randomElement())
+                    ?? "Share a gentle love gesture tonight."
+                let newCategory: TaskCategory = useOutdoor ? .locations : .general
+                
+                let replaced = Challenge(
+                    id: task.id,
+                    number: task.number,
+                    title: gesture,
+                    category: newCategory,
+                    difficulty: task.difficulty,
+                    hint: "Love Gesture",
+                    imageName: nil,
+                    isLocked: false
+                )
             return (replaced, true)
         }
     }
@@ -91,8 +92,10 @@ struct PosterGridView: View {
             switch selectedTab {
             case .all:
                 return true
+            case .qna:
+                return displayCat == .loveQnA
             case .indoor:
-                return displayCat != .locations && displayCat != .extraHot
+                return displayCat != .locations && displayCat != .extraHot && displayCat != .loveQnA
             case .outdoor:
                 return displayCat == .locations
             case .kama:
@@ -137,11 +140,16 @@ struct PosterGridView: View {
                             
                             // Grid
                             LazyVGrid(columns: columns, spacing: 10) {
-                                ForEach(tasks, id: \.0.id) { entry in
+                                let categoryTasks = tasks
+                                ForEach(0..<categoryTasks.count, id: \.self) { index in
+                                    let entry = categoryTasks[index]
                                     let task = entry.0
                                     let redacted = entry.1
                                     
-                                    PosterCell(task: task, onScratchReveal: {
+                                    // If not 'All' tab, use (index + 1) as display number
+                                    let displayNumber = selectedTab == .all ? task.number : (index + 1)
+                                    
+                                    PosterCell(task: task, displayNumber: displayNumber, onScratchReveal: {
                                         vm.reveal(task: task)
                                     }, onOpenTask: {
                                         if task.isLocked && !store.hasSubscription {

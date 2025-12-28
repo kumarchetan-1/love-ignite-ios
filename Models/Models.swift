@@ -12,7 +12,7 @@ struct Challenge: Identifiable, Codable {
 }
 
 enum TaskCategory: String, Codable {
-    case general, locations, questions, extraHot, techniques
+    case general, locations, questions, extraHot, techniques, loveQnA
 }
 
 enum Difficulty: String, Codable {
