@@ -1,113 +1,116 @@
 import Foundation
-import Combine
 import StoreKit
+import Combine
+import SwiftUI
 
 @MainActor
 class StoreKitManager: ObservableObject {
     static let shared = StoreKitManager()
     
-    @Published var hasSubscription: Bool = false
-    @Published var canEraseAll: Bool = false
-    @Published var showPaywall: Bool = false
     @Published var products: [Product] = []
+    @Published var purchasedProductIDs: Set<String> = []
+    @Published var showPaywall = false
     
-    // MARK: - Configuration
-    // These must match exactly what you set in App Store Connect
-    public let productIDs: Set<String> = [
-        "com.yourapp.monthly",   // e.g. $4.99 / month
-        "com.yourapp.yearly",    // e.g. $29.99 / year
-        "com.yourapp.lifetime"   // The $30 / ₹499 plan (Unlocks Everything + Erase All)
-    ]
+    private let productIDs = ["com.loveignite.premium.forever"]
+    private var transactionListener: Task<Void, Error>?
     
-    private init() {
-        // Kick off initial product request and subscription check
+    var hasSubscription: Bool {
+        return !purchasedProductIDs.isEmpty
+    }
+    
+    init() {
+        transactionListener = listenForTransactions()
         Task {
-            await requestProducts()
-            await checkSubscription()
+            await fetchProducts()
+            await updatePurchaseStatus()
         }
     }
     
-    func requestProducts() async {
+    deinit {
+        transactionListener?.cancel()
+    }
+    
+    func fetchProducts() async {
         do {
-            // Sort products by price to keep UI consistent
             let fetchedProducts = try await Product.products(for: productIDs)
-            self.products = fetchedProducts.sorted(by: { $0.price < $1.price })
-            print("Fetched products: \(self.products.map { $0.id })")
-        } catch {
-            print("Failed to fetch products: \(error)")
-        }
-    }
-    
-    func checkSubscription() async {
-        var hasActiveSub = false
-        var hasErase = false
-        
-        for await entitlement in Transaction.currentEntitlements {
-            if case .verified(let transaction) = entitlement {
-                print("Found active entitlement: \(transaction.productID)")
-                
-                // LIFETIME: Unlocks EVERYTHING (Subscription features + Erase button)
-                if transaction.productID == "com.yourapp.lifetime" {
-                    hasActiveSub = true
-                    hasErase = true
-                }
-                // SUBSCRIPTION: Unlocks content only
-                else if ["com.yourapp.monthly", "com.yourapp.yearly"].contains(transaction.productID) {
-                    hasActiveSub = true
-                }
-                // ERASE ONLY (If you ever wanted to sell it separately, though user implies it's in the $30 plan)
-                else if transaction.productID == "com.yourapp.eraseall" {
-                    hasErase = true
-                }
+            
+            await MainActor.run {
+                self.products = fetchedProducts
             }
+        } catch {
+            // Silent fail for product fetching
         }
+    }
+    
+    func purchase() async throws -> StoreKit.Transaction? {
+        guard let product = products.first else { return nil }
         
-        // Update published properties on main thread
-        self.hasSubscription = hasActiveSub
-        self.canEraseAll = hasErase
-    }
-    
-    func updateSubscriptionState() async {
-        await checkSubscription()
-    }
-    
-    func purchase(_ product: Product) async throws -> Transaction? {
-        print("Attempting to purchase product: \(product.id)")
         let result = try await product.purchase()
         
         switch result {
         case .success(let verification):
             let transaction = try checkVerified(verification)
-            await updateSubscriptionState()
+            
+            // This is the real transaction from Apple
+            await updatePurchaseStatus()
             await transaction.finish() 
+            
+            // Sync status to backend
+            try await BackendService.shared.setPremiumStatus(isPremium: true)
+            AuthenticationManager.shared.isPremium = true
+            
             return transaction
-            
-        case .pending:
-            print("Purchase is pending.")
+        case .userCancelled, .pending:
             return nil
-            
-        case .userCancelled:
-            print("Purchase was cancelled by the user.")
-            return nil
-            
         @unknown default:
-            print("Unknown purchase result.")
             return nil
+        }
+    }
+    
+    func updatePurchaseStatus() async {
+        var purchased: Set<String> = []
+        
+        for await result in StoreKit.Transaction.currentEntitlements {
+            if case .verified(let transaction) = result {
+                if productIDs.contains(transaction.productID) {
+                    if transaction.revocationDate == nil {
+                        purchased.insert(transaction.productID)
+                    }
+                }
+            }
+        }
+        
+        self.purchasedProductIDs = purchased
+        if !purchased.isEmpty {
+            AuthenticationManager.shared.isPremium = true
+        }
+    }
+    
+    func updateSubscriptionState() async {
+        await updatePurchaseStatus()
+    }
+    
+    private func listenForTransactions() -> Task<Void, Error> {
+        return Task.detached {
+            for await result in StoreKit.Transaction.updates {
+                if case .verified(let transaction) = result {
+                    await transaction.finish()
+                    await self.updatePurchaseStatus()
+                }
+            }
         }
     }
     
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
-        case .unverified(let unverifiedTransaction, let error):
-            print("Unverified transaction: \(unverifiedTransaction), error: \(error)")
+        case .unverified:
             throw StoreKitError.unverifiedTransaction
-        case .verified(let verifiedTransaction):
-            return verifiedTransaction
+        case .verified(let safe):
+            return safe
         }
     }
     
     enum StoreKitError: Error {
         case unverifiedTransaction
-        case productNotFound
     }
 }

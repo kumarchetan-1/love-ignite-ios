@@ -21,7 +21,7 @@ class StorageService: StorageServiceProtocol {
             NSUbiquitousKeyValueStore.default.set(data, forKey: key)
             NSUbiquitousKeyValueStore.default.synchronize()
         } catch {
-            print("StorageService: Failed to save object for key '\(key)': \(error)")
+            // Silent fail
         }
     }
 
@@ -31,7 +31,6 @@ class StorageService: StorageServiceProtocol {
             do {
                 return try decoder.decode(type, from: data)
             } catch {
-                print("StorageService: Failed to decode iCloud data for key '\(key)': \(error)")
                 // Fallback to local if cloud data is corrupt
             }
         }
@@ -41,7 +40,6 @@ class StorageService: StorageServiceProtocol {
         do {
             return try decoder.decode(type, from: data)
         } catch {
-            print("StorageService: Failed to decode local data for key '\(key)': \(error)")
             return nil
         }
     }

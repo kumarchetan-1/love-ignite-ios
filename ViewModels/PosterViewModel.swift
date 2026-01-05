@@ -13,6 +13,8 @@ class PosterViewModel: ObservableObject {
     private var storage: StorageServiceProtocol
     private var cancellables = Set<AnyCancellable>()
     
+    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
+    
     private struct Keys {
         static let tasks = "tasks_v2"
         static let achievements = "achievements_v1"
@@ -24,6 +26,30 @@ class PosterViewModel: ObservableObject {
         self.storage = storage
         loadSampleDataIfNeeded()
         loadProgress()
+        
+        Task {
+            await refreshDailyTasksWithAI()
+        }
+
+        // Sync with backend if already authenticated
+        if AuthenticationManager.shared.isAuthenticated {
+            Task {
+                await syncWithBackend()
+            }
+        }
+
+        // Observe authentication changes
+        AuthenticationManager.shared.$isAuthenticated
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] loggedIn in
+                if loggedIn {
+                    Task {
+                        await self?.syncWithBackend()
+                    }
+                }
+            }
+            .store(in: &cancellables)
 
         $revealedIDs
             .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
@@ -132,12 +158,49 @@ class PosterViewModel: ObservableObject {
     func saveProgress() {
         storage.save(Array(revealedIDs), for: Keys.revealed)
         storage.save(achievements, for: Keys.achievements)
+        
+        // Push to backend if authenticated
+        if AuthenticationManager.shared.isAuthenticated {
+            Task {
+                try? await BackendService.shared.syncUnlockedCards(cardIds: Array(revealedIDs))
+                try? await BackendService.shared.syncAchievements(achievementIds: achievements.filter { $0.unlocked }.map { $0.id })
+            }
+        }
     }
 
     func loadProgress() {
         if let arr = storage.load([String].self, for: Keys.revealed) {
             // Merge loaded data with current state (Union) to prevent data loss during sync
             self.revealedIDs.formUnion(arr)
+        }
+    }
+
+    @MainActor
+    func syncWithBackend() async {
+        do {
+            let profile = try await BackendService.shared.getProfile()
+            
+            // Merge revealed cards
+            let serverCards = Set(profile.unlockedCards)
+            if !serverCards.isEmpty {
+                self.revealedIDs.formUnion(serverCards)
+            }
+            
+            // Merge achievements
+            let serverAchievements = Set(profile.achievements)
+            for i in 0..<achievements.count {
+                if serverAchievements.contains(achievements[i].id) {
+                    achievements[i].unlocked = true
+                }
+            }
+            
+            // Save merged state locally
+            saveProgress()
+            
+            // Recalculate based on merged state
+            checkAchievements()
+        } catch {
+            // Silent fail
         }
     }
 
@@ -152,6 +215,13 @@ class PosterViewModel: ObservableObject {
         storage.save(generated.tasks, for: Keys.tasks)
         storage.save(generated.locks, for: Keys.positionLocks)
         
+        saveProgress()
+    }
+
+    func revealAllTasks() {
+        let allIDs = tasks.map { $0.id }
+        revealedIDs.formUnion(allIDs)
+        checkAchievements()
         saveProgress()
     }
 
@@ -257,6 +327,29 @@ class PosterViewModel: ObservableObject {
                     self.recentlyUnlocked = nil
                 }
             }
+        }
+    }
+
+    @MainActor
+    func refreshDailyTasksWithAI() async {
+        let lastDate = UserDefaults.standard.string(forKey: "last_ai_task_date")
+        let today = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .none)
+        
+        // If we already have today's tasks in memory, don't fetch again
+        if lastDate == today && !self.dailyTasks.isEmpty {
+            return
+        }
+
+        let aiTasks = await AITaskService.shared.generateDailyTasks(hideExplicit: hideExplicit)
+        
+        if !aiTasks.isEmpty {
+            self.dailyTasks = aiTasks
+            UserDefaults.standard.set(today, forKey: "last_ai_task_date")
+            // Optionally save to storage to persist across app restarts
+            // storage.save(aiTasks, for: "ai_daily_tasks")
+        } else {
+            // Fallback to local generator if AI fails or no API key
+            self.dailyTasks = TasksData.generateDailyTasks()
         }
     }
 }

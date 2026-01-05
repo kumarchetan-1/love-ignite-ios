@@ -65,17 +65,17 @@ struct PosterGridView: View {
                 return (task, false)
             }
             
-            // Deterministic replacement so SwiftUI doesn't recompute random content on each render
-            let useOutdoor = task.id.hashValue.isMultiple(of: 2)
-                let gesture = (useOutdoor ? outdoorGestures.randomElement() : indoorGestures.randomElement())
-                    ?? "Share a gentle love gesture tonight."
-                let newCategory: TaskCategory = useOutdoor ? .locations : .general
+            // Deterministic replacement based on task ID
+            let hash = abs(task.id.hashValue)
+            let useOutdoor = hash.isMultiple(of: 2)
+            let gestureList = useOutdoor ? outdoorGestures : indoorGestures
+            let gesture = gestureList[hash % gestureList.count]
                 
                 let replaced = Challenge(
                     id: task.id,
                     number: task.number,
                     title: gesture,
-                    category: newCategory,
+                category: .extraHot, // Keep the category so it stays in the Kamasutra tab
                     difficulty: task.difficulty,
                     hint: "Love Gesture",
                     imageName: nil,
@@ -169,7 +169,7 @@ struct PosterGridView: View {
                     }
                 }
                 
-                Spacer().frame(height: 40)
+                Spacer().frame(height: 120)
             }
         }
         .sheet(item: $selectedTask) { t in

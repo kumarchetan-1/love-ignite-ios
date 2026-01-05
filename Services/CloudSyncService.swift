@@ -9,6 +9,5 @@ class CloudSyncService {
 
     @objc private func kvStoreChanged(_ note: Notification) {
         // handle external changes if needed
-        print("iCloud KVS changed:", note.userInfo ?? [:])
     }
 }

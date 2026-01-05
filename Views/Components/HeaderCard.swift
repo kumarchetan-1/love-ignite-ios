@@ -9,7 +9,7 @@ struct HeaderCard: View {
     @Environment(\.colorScheme) private var scheme
     
     @State private var showRelockAlert = false
-    @State private var showEraseAlert = false
+    @State private var showRevealAlert = false
     @State private var selectedDailyTask: Challenge?
 
     private var progress: Double {
@@ -109,13 +109,13 @@ struct HeaderCard: View {
                     }
                     
                     HeaderActionButton(
-                        icon: store.canEraseAll ? "trash.fill" : "lock.fill",
-                        title: "Erase All",
-                        color: store.canEraseAll ? .red : .orange,
-                        isLocked: !store.canEraseAll
+                        icon: store.hasSubscription ? "eye.fill" : "lock.fill",
+                        title: "Reveal All",
+                        color: store.hasSubscription ? .purple : .orange,
+                        isLocked: !store.hasSubscription
                     ) {
-                        if store.canEraseAll {
-                            showEraseAlert = true
+                        if store.hasSubscription {
+                            showRevealAlert = true
                         } else {
                             store.showPaywall = true
                         }
@@ -126,7 +126,7 @@ struct HeaderCard: View {
                 // --- Daily Tasks Section ---
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("Daily Selection")
+                        Text("Tasks of the Day")
                             .font(.system(size: 15, weight: .heavy, design: .rounded))
                             .foregroundColor(scheme == .dark ? .white.opacity(0.9) : .black.opacity(0.7))
                         
@@ -172,17 +172,17 @@ struct HeaderCard: View {
         } message: {
             Text("This will hide all revealed tasks again. Your achievements will also be reset.")
         }
-        // Alert for Erase All
-        .alert("Erase Everything?", isPresented: $showEraseAlert) {
+        // Alert for Reveal All
+        .alert("Reveal Everything?", isPresented: $showRevealAlert) {
             Button("Cancel", role: .cancel) { }
-            Button("Erase All", role: .destructive) {
+            Button("Reveal All", role: .none) {
                 withAnimation {
-                    vm.resetProgress()
+                    vm.revealAllTasks()
                 }
                 Haptics.success()
             }
         } message: {
-            Text("This permanently wipes all progress and history. This action cannot be undone.")
+            Text("This will reveal all hidden tasks at once. Your achievements will also be updated.")
         }
         // Sheet for Daily Task
         .sheet(item: $selectedDailyTask) { task in

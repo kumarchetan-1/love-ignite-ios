@@ -2,7 +2,7 @@ import SwiftUI
 import StoreKit
 
 struct SettingsView: View {
-    @StateObject private var authManager = AuthenticationManager.shared
+    @ObservedObject private var authManager = AuthenticationManager.shared
     @EnvironmentObject var store: StoreKitManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.colorScheme) private var scheme
@@ -11,10 +11,14 @@ struct SettingsView: View {
     // User preferences
     @AppStorage("haptics_enabled") private var hapticsEnabled: Bool = true
     @AppStorage("daily_reminders") private var dailyReminders: Bool = false
-    @AppStorage("hide_explicit") private var hideExplicit: Bool = false
+    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
     @AppStorage("theme_preference") private var themePreference: String = "dark"
     
     @State private var showingReminderAlert = false
+    @State private var showTermsSheet = false
+    @State private var showPrivacySheet = false
+    @State private var showEditProfile = false
+    @State private var showChangePassword = false
     
     var body: some View {
         NavigationView {
@@ -22,7 +26,7 @@ struct SettingsView: View {
                 LinearGradient(gradient: Gradient(colors: ThemePalette.backgroundColors(for: scheme)),
                                startPoint: .topLeading,
                                endPoint: .bottomTrailing)
-                .ignoresSafeArea() // Fallback bg if list is transparent
+                .ignoresSafeArea() 
                 
                 List {
                     // MARK: - Account Section
@@ -47,8 +51,28 @@ struct SettingsView: View {
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+                                
+                                Spacer()
+                                
+                                Button {
+                                    showEditProfile = true
+                                } label: {
+                                    Image(systemName: "pencil.circle.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.pink)
+                                }
                             }
                             .padding(.vertical, 4)
+
+                            Button {
+                                showChangePassword = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "key.fill")
+                                        .foregroundColor(.pink)
+                                    Text("Change Password")
+                                }
+                            }
                             
                             Button(role: .destructive) {
                                 authManager.logout()
@@ -80,11 +104,6 @@ struct SettingsView: View {
                                     .foregroundColor(.green)
                                 Text("Premium Active")
                                 Spacer()
-                                if store.canEraseAll {
-                                    Image(systemName: "trash.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.red)
-                                }
                             }
                         } else {
                             Button {
@@ -115,12 +134,9 @@ struct SettingsView: View {
                         Toggle("Daily Reminders", isOn: $dailyReminders)
                             .onChange(of: dailyReminders) { newValue in
                                 showingReminderAlert = true
-                                // TODO: integrate UserNotifications if desired
                             }
                         Toggle("Hide Explicit Content", isOn: $hideExplicit)
-                            .onChange(of: hideExplicit) { _ in
-                                // Triggers UI update via @AppStorage; filtering happens in PosterGridView
-                            }
+                            .onChange(of: hideExplicit) { _ in }
                         
                         Picker("Theme", selection: $themePreference) {
                             Text("Dark").tag("dark")
@@ -137,9 +153,15 @@ struct SettingsView: View {
                     
                     // MARK: - Support & Legal
                     Section {
-                        Link("Privacy Policy", destination: URL(string: "https://yourwebsite.com/privacy")!)
-                        Link("Terms of Service", destination: URL(string: "https://yourwebsite.com/terms")!)
-                        Link("Contact Support", destination: URL(string: "mailto:support@yourapp.com")!)
+                        Button("Privacy Policy") {
+                            showPrivacySheet = true
+                        }
+                        
+                        Button("Terms of Service") {
+                            showTermsSheet = true
+                        }
+                        
+                        Link("Contact Support", destination: URL(string: "mailto:kumarchetan.npr@gmail.com")!)
                         
                         HStack {
                             Text("Version")
@@ -156,6 +178,23 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .sheet(isPresented: $showAuthSheet) {
                 AuthenticationView()
+            }
+            .sheet(isPresented: $store.showPaywall) {
+                PaywallView()
+            }
+            .sheet(isPresented: $showTermsSheet) {
+                TermsOfServiceView()
+            }
+            .sheet(isPresented: $showPrivacySheet) {
+                PrivacyPolicyView()
+            }
+            .sheet(isPresented: $showEditProfile) {
+                EditProfileView()
+                    .environmentObject(authManager)
+            }
+            .sheet(isPresented: $showChangePassword) {
+                ChangePasswordView()
+                    .environmentObject(authManager)
             }
             .alert("Daily reminders", isPresented: $showingReminderAlert) {
                 Button("OK", role: .cancel) { }

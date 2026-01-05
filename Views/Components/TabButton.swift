@@ -10,57 +10,45 @@ struct TabButton: View {
 
     var body: some View {
         Button(action: {
+            if !selected {
             Haptics.selection()
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 action()
             }
         }) {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
+                ZStack {
+                    if selected {
+                        Capsule()
+                            .fill(activeColor.opacity(scheme == .dark ? 0.15 : 0.12))
+                            .matchedGeometryEffect(id: "TabBackground", in: namespace)
+                            .frame(width: 44, height: 30)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(scheme == .dark ? 0.2 : 0.5), lineWidth: 0.5)
+                            )
+                    }
+                    
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(selected ? activeColor : inactiveColor)
-                    .scaleEffect(selected ? 1.1 : 1.0)
+                }
+                .frame(height: 30)
 
                 Text(title)
-                    .font(.caption)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(selected ? activeColor : inactiveColor)
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 16)
-            .background(
-                Group {
-                    if selected {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(selectedBackground)
-                            .matchedGeometryEffect(id: "TabBackground", in: namespace)
-                    } else {
-                        Color.clear
-                    }
-                }
-            )
-            .scaleEffect(selected ? 1.05 : 1.0)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(PlainButtonStyle())
     }
     
     private var activeColor: Color {
-        scheme == .light ? Color.black : .white
+        scheme == .light ? .pink : .white
     }
     
     private var inactiveColor: Color {
-        scheme == .light ? Color.black.opacity(0.45) : .gray.opacity(0.6)
-    }
-    
-    private var selectedBackground: Color {
-        scheme == .light ? Color.black.opacity(0.08) : Color.white.opacity(0.12)
+        scheme == .light ? Color.black.opacity(0.35) : .white.opacity(0.35)
     }
 }
-
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
-    }
-}
-

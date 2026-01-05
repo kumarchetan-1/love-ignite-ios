@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AuthenticationView: View {
-    @StateObject private var authManager = AuthenticationManager.shared
+    @ObservedObject private var authManager = AuthenticationManager.shared
     @Environment(\.dismiss) var dismiss
     
     @State private var isLoginMode = true
@@ -10,6 +10,7 @@ struct AuthenticationView: View {
     @State private var name = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showForgotPassword = false
     
     var onSuccess: (() -> Void)?
     
@@ -48,7 +49,19 @@ struct AuthenticationView: View {
                             .textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress)
                         
-                        CustomTextField(icon: "lock.fill", placeholder: "Password", text: $password, isSecure: true)
+                        VStack(alignment: .trailing, spacing: 8) {
+                            CustomTextField(icon: "lock.fill", placeholder: "Password", text: $password, isSecure: true)
+                            
+                            if isLoginMode {
+                                Button {
+                                    showForgotPassword = true
+                                } label: {
+                                    Text("Forgot Password?")
+                                        .font(.footnote)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            }
+                        }
                     }
                     .padding(.horizontal)
                     
@@ -79,6 +92,42 @@ struct AuthenticationView: View {
                     .padding(.horizontal)
                     .disabled(isLoading)
                     
+                    // OR Divider
+                    HStack {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(height: 1)
+                        Text("OR")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white.opacity(0.3))
+                            .padding(.horizontal, 10)
+                        Rectangle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(height: 1)
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 10)
+
+                    // Google Login Button
+                    Button(action: handleGoogleAuth) {
+                        HStack(spacing: 12) {
+                            GoogleLogo()
+                                .frame(width: 20, height: 20)
+                            
+                            Text("Continue with Google")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(14)
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 20) // Added padding to prevent sticking to bottom text
+                    .disabled(isLoading)
+                    
                     // Toggle Mode
                     Button {
                         withAnimation {
@@ -101,6 +150,14 @@ struct AuthenticationView: View {
                 .padding()
             }
         }
+        .sheet(isPresented: $authManager.needsVerification) {
+            VerificationView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView()
+                .environmentObject(authManager)
+        }
     }
     
     private func handleAuth() {
@@ -115,11 +172,35 @@ struct AuthenticationView: View {
                     try await authManager.signup(name: name, email: email, password: password)
                 }
                 
-                // Success
                 await MainActor.run {
                     isLoading = false
-                    dismiss()
-                    onSuccess?()
+                    if authManager.isAuthenticated {
+                        dismiss()
+                        onSuccess?()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func handleGoogleAuth() {
+        isLoading = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                try await authManager.googleLogin()
+                await MainActor.run {
+                    isLoading = false
+                    if authManager.isAuthenticated {
+                        dismiss()
+                        onSuccess?()
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -159,4 +240,3 @@ struct CustomTextField: View {
         .foregroundColor(.white)
     }
 }
-
