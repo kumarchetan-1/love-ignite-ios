@@ -5,6 +5,10 @@ struct TaskDetailSheet: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) private var scheme
     
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+    
     private func displayTitle() -> String {
         // If extraHot and has an imageName, derive a stylish name from the asset name:
         // Expected pattern (renamed): ks_34_aphrodite or ks_54_dragon_pose
@@ -74,7 +78,7 @@ struct TaskDetailSheet: View {
                     .padding(.top, 12)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 32) {
+                    VStack(spacing: isIPad ? 48 : 32) {
                         
                         // Icon / Image Section
                         if let name = task.imageName {
@@ -84,17 +88,17 @@ struct TaskDetailSheet: View {
                             ZStack {
                                 Circle()
                                     .fill(neonColor.opacity(0.1))
-                                    .frame(width: 280, height: 280)
+                                    .frame(width: isIPad ? 400 : 280, height: isIPad ? 400 : 280)
                                     .blur(radius: 20)
                                 
                                 Image(name)
                                     .resizable()
                                     .renderingMode(.template)
                                     .scaledToFit()
-                                    .frame(maxWidth: 260, maxHeight: 260)
+                                    .frame(maxWidth: isIPad ? 360 : 260, maxHeight: isIPad ? 360 : 260)
                                     .foregroundColor(neonColor)
                                     .neonGlow(neonColor)
-                                    .shadow(color: neonColor.opacity(0.5), radius: 10, x: 0, y: 0)
+                                    .shadow(color: neonColor.opacity(0.5), radius: 15, x: 0, y: 0)
                             }
                             .padding(.top, 20)
                         } else {
@@ -104,11 +108,11 @@ struct TaskDetailSheet: View {
                             ZStack {
                                 Circle()
                                     .fill(neonColor.opacity(0.1))
-                                    .frame(width: 120, height: 120)
+                                    .frame(width: isIPad ? 180 : 120, height: isIPad ? 180 : 120)
                                     .blur(radius: 20)
 
                                 Image(systemName: iconForCategory(task.category))
-                                    .font(.system(size: 60))
+                                    .font(.system(size: isIPad ? 90 : 60))
                                     .foregroundColor(neonColor)
                                     .neonGlow(neonColor)
                             }
@@ -116,27 +120,26 @@ struct TaskDetailSheet: View {
                         }
                         
                         // Text Content Section
-                        VStack(spacing: 16) {
+                        VStack(spacing: isIPad ? 24 : 16) {
                             Text(taskCategoryTitle().uppercased())
-                                .font(.caption)
-                                .fontWeight(.bold)
+                                .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                                 .tracking(2)
-                    .foregroundColor(.white.opacity(0.6))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
+                                .foregroundColor(.white.opacity(0.6))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                                 .background(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
                             
-                Text(displayTitle())
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                            Text(displayTitle())
+                                .font(.system(size: isIPad ? 42 : 28, weight: .black, design: .rounded))
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(.white)
                                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, isIPad ? 60 : 20)
                                 .fixedSize(horizontal: false, vertical: true)
                             
                             if let hint = task.hint {
                                 Text(hint)
-                                    .font(.subheadline)
+                                    .font(.system(size: isIPad ? 20 : 16, weight: .medium, design: .rounded))
                                     .italic()
                                     .foregroundColor(.white.opacity(0.7))
                                     .padding(.top, 8)
@@ -146,6 +149,7 @@ struct TaskDetailSheet: View {
                         // Action / Difficulty Info
                         HStack(spacing: 20) {
                             DifficultyBadge(difficulty: task.difficulty)
+                                .scaleEffect(isIPad ? 1.3 : 1.0)
                         }
                         .padding(.top, 10)
                     }

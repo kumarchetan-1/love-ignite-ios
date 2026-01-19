@@ -3,7 +3,7 @@ import SwiftUI
 struct PosterGridView: View {
     @EnvironmentObject var vm: PosterViewModel
     @EnvironmentObject var store: StoreKitManager
-    @AppStorage("hide_explicit") private var hideExplicit: Bool = false
+    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
     @State private var selectedTab: FilterTab = .all
     
     @State private var selectedTask: Challenge?
@@ -89,6 +89,13 @@ struct PosterGridView: View {
     private var filteredVisibleTasks: [(Challenge, Bool)] {
         visibleTasks.filter { entry in
             let displayCat = entry.0.category
+            
+            // If Privacy Mode is ON, we hide all .extraHot tasks from the "All" tab 
+            // and they are already filtered out if we hide the Kamasutra tab.
+            if hideExplicit && displayCat == .extraHot && selectedTab == .all {
+                return false
+            }
+            
             switch selectedTab {
             case .all:
                 return true
@@ -113,33 +120,38 @@ struct PosterGridView: View {
     let displayOrder: [Difficulty] = [.easy, .medium, .hard, .extreme]
     
     // Grid layout
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 5)
+    private var columns: [GridItem] {
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        let minWidth: CGFloat = isIPad ? 140 : 65
+        return [GridItem(.adaptive(minimum: minWidth), spacing: 16)]
+    }
     
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Top spacing to clear safe areas / dynamic island
-                Spacer().frame(height: 50)
+                // Modern top spacing for clean breathing room
+                let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+                Spacer().frame(height: isIPad ? 40 : 70)
                 
                 // Header Card now scrolls with content
                 HeaderCard(revealedCount: vm.revealedIDs.count, total: vm.tasks.count)
                     .environmentObject(vm)
-                    .padding(Edge.Set.horizontal, 14)
+                    .padding(.horizontal, isIPad ? 40 : 14)
                 
                 // Filter Tabs
                 FilterTabs(selectedTab: $selectedTab)
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, isIPad ? 40 : 14)
                     .padding(.bottom, 4)
                 
                 ForEach(displayOrder, id: \.self) { diff in
                     if let tasks = groupedTasks[diff], !tasks.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             // Section Title
                             CategoryHeader(difficulty: diff)
-                                .padding(.horizontal, 14)
+                                .padding(.horizontal, isIPad ? 40 : 14)
                             
                             // Grid
-                            LazyVGrid(columns: columns, spacing: 10) {
+                            LazyVGrid(columns: columns, spacing: 12) {
                                 let categoryTasks = tasks
                                 ForEach(0..<categoryTasks.count, id: \.self) { index in
                                     let entry = categoryTasks[index]
@@ -161,10 +173,9 @@ struct PosterGridView: View {
                                     }, redactedExplicit: redacted)
                                     .environmentObject(vm)
                                     .environmentObject(store)
-                                    .frame(height: 72)
                                 }
                             }
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, isIPad ? 38 : 12)
                         }
                     }
                 }
@@ -174,7 +185,7 @@ struct PosterGridView: View {
         }
         .sheet(item: $selectedTask) { t in
             TaskDetailSheet(task: t)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
         }
         .sheet(isPresented: $store.showPaywall) {
             PaywallView()
@@ -188,52 +199,35 @@ struct CategoryHeader: View {
     @Environment(\.colorScheme) private var scheme
     
     var body: some View {
-        HStack {
-            Text(difficulty.rawValue.capitalized)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+        HStack(spacing: 12) {
+            Text(difficulty.rawValue.uppercased())
+                .font(.system(size: 14, weight: .black, design: .rounded))
+                .tracking(2)
                 .foregroundColor(titleColor)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(
                     Capsule()
                         .fill(backgroundColor)
                 )
-                .overlay(
-                    Capsule()
-                        .stroke(borderColor, lineWidth: 1)
+            
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [NeonColors.color(for: difficulty).opacity(0.6), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
                 )
-            
-            Spacer()
-            
-            // Decorative line
-            Capsule()
-                .fill(LinearGradient(colors: [NeonColors.color(for: difficulty), .clear], startPoint: .leading, endPoint: .trailing))
-                .frame(height: 2)
+                .frame(height: 1)
         }
     }
     
     private var backgroundColor: Color {
-        if scheme == .light {
-            return NeonColors.color(for: difficulty).opacity(0.14)
-        } else {
-            return NeonColors.color(for: difficulty).opacity(0.2)
-        }
+        NeonColors.color(for: difficulty).opacity(self.scheme == .dark ? 0.2 : 0.1)
     }
     
     private var titleColor: Color {
-        if scheme == .light {
-            // Darker shade of the same base color for contrast on light pills
-            return NeonColors.color(for: difficulty).opacity(0.9)
-        } else {
-            return .white
-        }
-    }
-    
-    private var borderColor: Color {
-        if scheme == .light {
-            return NeonColors.color(for: difficulty).opacity(0.6)
-        } else {
-            return NeonColors.color(for: difficulty).opacity(0.5)
-        }
+        NeonColors.color(for: difficulty)
     }
 }

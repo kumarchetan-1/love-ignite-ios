@@ -9,33 +9,34 @@ struct TabButton: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
         Button(action: {
             if !selected {
             Haptics.selection()
                 action()
             }
         }) {
-            VStack(spacing: 4) {
+            VStack(spacing: isIPad ? 10 : 4) {
                 ZStack {
                     if selected {
                         Capsule()
-                            .fill(activeColor.opacity(scheme == .dark ? 0.15 : 0.12))
+                            .fill(activeColor.opacity(self.scheme == .dark ? 0.15 : 0.12))
                             .matchedGeometryEffect(id: "TabBackground", in: namespace)
-                            .frame(width: 44, height: 30)
+                            .frame(width: isIPad ? 100 : 44, height: isIPad ? 50 : 30)
                             .overlay(
                                 Capsule()
-                                    .stroke(Color.white.opacity(scheme == .dark ? 0.2 : 0.5), lineWidth: 0.5)
+                                    .stroke(Color.white.opacity(self.scheme == .dark ? 0.2 : 0.5), lineWidth: 0.5)
                             )
                     }
                     
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: isIPad ? 32 : 18, weight: .bold))
                     .foregroundColor(selected ? activeColor : inactiveColor)
                 }
-                .frame(height: 30)
+                .frame(height: isIPad ? 50 : 30)
 
                 Text(title)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: isIPad ? 18 : 10, weight: .bold, design: .rounded))
                     .foregroundColor(selected ? activeColor : inactiveColor)
             }
             .frame(maxWidth: .infinity)

@@ -12,6 +12,10 @@ struct HeaderCard: View {
     @State private var showRevealAlert = false
     @State private var selectedDailyTask: Challenge?
 
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     private var progress: Double {
         guard total > 0 else { return 0 }
         return min(Double(revealedCount) / Double(total), 1)
@@ -19,98 +23,91 @@ struct HeaderCard: View {
 
     var body: some View {
         ZStack {
-            // Modern Floating Card Background
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            // Modern Floating Card Background with Mesh-like Gradient
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(
-                    scheme == .dark ?
-                        LinearGradient(colors: [Color.black.opacity(0.4), Color.black.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing) :
-                        LinearGradient(colors: [Color.white, Color.white.opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    self.scheme == .dark ?
+                        AnyShapeStyle(LinearGradient(colors: [Color.black.opacity(0.6), Color.black.opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing)) :
+                        AnyShapeStyle(.ultraThinMaterial)
                 )
                 .shadow(
-                    color: scheme == .dark ? .black.opacity(0.3) : Color.pink.opacity(0.12),
-                    radius: 20, x: 0, y: 10
+                    color: self.scheme == .dark ? .black.opacity(0.4) : Color.pink.opacity(0.1),
+                    radius: 25, x: 0, y: 12
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
                         .stroke(
-                            scheme == .dark ?
-                                LinearGradient(colors: [.white.opacity(0.15), .clear], startPoint: .topLeading, endPoint: .bottomTrailing) :
-                                LinearGradient(colors: [.white, Color.pink.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            LinearGradient(
+                                colors: [
+                                    .white.opacity(self.scheme == .dark ? 0.2 : 0.6),
+                                    .white.opacity(0.1),
+                                    .clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
                             lineWidth: 1.5
                         )
                 )
 
-            VStack(spacing: 16) {
-                // Top Row: Title + Percentage
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 4) {
+            VStack(spacing: 20) {
+                // Top Row: Title + Progress Ring
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Love Journey")
-                            .font(.system(size: 22, weight: .heavy, design: .rounded))
-                            .foregroundColor(scheme == .dark ? .white : Color.pink.opacity(0.9))
+                            .font(.system(size: isIPad ? 36 : 26, weight: .black, design: .rounded))
+                            .foregroundColor(self.scheme == .dark ? .white : Color.pink.opacity(0.9))
                         
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             Image(systemName: "sparkles")
-                                .font(.caption2)
+                                .font(isIPad ? .body : .caption)
+                                .foregroundColor(.yellow)
                             Text("\(revealedCount) of \(total) discovered")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .font(.system(size: isIPad ? 18 : 14, weight: .bold, design: .rounded))
+                                .foregroundColor(self.scheme == .dark ? .white.opacity(0.6) : Color.black.opacity(0.5))
                         }
-                        .foregroundColor(scheme == .dark ? .white.opacity(0.5) : Color.black.opacity(0.4))
                     }
                     
                     Spacer()
                     
-                    // Modern Progress Ring
+                    // Modern Progress Ring with Glow
                     ZStack {
                         Circle()
-                            .stroke(scheme == .dark ? Color.white.opacity(0.08) : Color.pink.opacity(0.05), lineWidth: 6)
-                            .frame(width: 54, height: 54)
+                            .stroke(self.scheme == .dark ? Color.white.opacity(0.1) : Color.pink.opacity(0.08), lineWidth: isIPad ? 10 : 8)
+                            .frame(width: isIPad ? 80 : 64, height: isIPad ? 80 : 64)
                         
                         Circle()
                             .trim(from: 0, to: progress)
                             .stroke(
                                 LinearGradient(colors: [.pink, .purple, .orange], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                                style: StrokeStyle(lineWidth: isIPad ? 10 : 8, lineCap: .round)
                             )
-                            .frame(width: 54, height: 54)
+                            .frame(width: isIPad ? 80 : 64, height: isIPad ? 80 : 64)
                             .rotationEffect(.degrees(-90))
-                            .shadow(color: .pink.opacity(0.3), radius: 4, x: 0, y: 2)
+                            .shadow(color: .pink.opacity(0.5), radius: 6)
                         
-                        Text("\(Int(progress * 100))%")
-                            .font(.system(size: 14, weight: .heavy, design: .rounded))
-                            .foregroundColor(scheme == .dark ? .white : .black.opacity(0.8))
-                    }
-                }
-                
-                // Aesthetic Progress Bar
-                VStack(spacing: 6) {
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.04))
-                                .frame(height: 8)
-                            
-                            Capsule()
-                                .fill(
-                                    LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
-                                )
-                                .frame(width: geo.size.width * CGFloat(progress), height: 8)
-                                .shadow(color: .pink.opacity(0.4), radius: 6, x: 0, y: 0)
+                        VStack(spacing: -2) {
+                            Text("\(Int(progress * 100))")
+                                .font(.system(size: isIPad ? 20 : 16, weight: .black, design: .rounded))
+                            Text("%")
+                                .font(.system(size: isIPad ? 12 : 10, weight: .bold, design: .rounded))
+                                .opacity(0.7)
                         }
+                        .foregroundColor(self.scheme == .dark ? .white : .black.opacity(0.8))
                     }
-                    .frame(height: 8)
                 }
                 
                 // Refined Action Buttons
-                HStack(spacing: 12) {
+                HStack(spacing: isIPad ? 16 : 10) {
                     if revealedCount > 0 {
-                        HeaderActionButton(icon: "arrow.counterclockwise", title: "Relock", color: .gray) {
+                        HeaderActionButton(icon: "arrow.counterclockwise", title: "Reset", color: .gray) {
                             showRelockAlert = true
                         }
                     }
                     
                     HeaderActionButton(
                         icon: store.hasSubscription ? "eye.fill" : "lock.fill",
-                        title: "Reveal All",
+                        title: store.hasSubscription ? "Reveal All" : "Unlock All",
                         color: store.hasSubscription ? .purple : .orange,
                         isLocked: !store.hasSubscription
                     ) {
@@ -121,29 +118,31 @@ struct HeaderCard: View {
                         }
                     }
                 }
-                .padding(.top, 4)
+                .padding(.horizontal, isIPad ? 0 : 2) // Slight padding to prevent edge touching
+                .frame(maxWidth: .infinity)
 
                 // --- Daily Tasks Section ---
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("Tasks of the Day")
-                            .font(.system(size: 15, weight: .heavy, design: .rounded))
-                            .foregroundColor(scheme == .dark ? .white.opacity(0.9) : .black.opacity(0.7))
+                        Label("Daily Challenges", systemImage: "calendar.badge.clock")
+                            .font(.system(size: isIPad ? 22 : 16, weight: .heavy, design: .rounded))
+                            .foregroundColor(self.scheme == .dark ? .white.opacity(0.9) : .black.opacity(0.8))
                         
                         Spacer()
                         
-                        Text("NEW")
-                            .font(.system(size: 9, weight: .black))
+                        Text("HOT")
+                            .font(.system(size: isIPad ? 12 : 10, weight: .black))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.pink)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                LinearGradient(colors: [.orange, .red], startPoint: .leading, endPoint: .trailing)
+                            )
                             .clipShape(Capsule())
                     }
-                    .padding(.horizontal, 4)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 14) {
+                        HStack(spacing: isIPad ? 24 : 16) {
                             ForEach(vm.dailyTasks) { task in
                                 DailyTaskCard(task: task)
                                     .onTapGesture {
@@ -152,13 +151,11 @@ struct HeaderCard: View {
                                     }
                             }
                         }
-                        .padding(.horizontal, 4)
-                        .padding(.bottom, 8)
+                        .padding(.vertical, 4)
                     }
                 }
-                .padding(.top, 8)
             }
-            .padding(20)
+            .padding(24)
         }
         // Alert for Relock
         .alert("Relock All Memories?", isPresented: $showRelockAlert) {
@@ -196,29 +193,33 @@ struct DailyTaskCard: View {
     let task: Challenge
     @Environment(\.colorScheme) private var scheme
     
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Circle()
-                    .fill(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 28, height: 28)
-                    .overlay(
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white)
-                    )
+                ZStack {
+                    Circle()
+                        .fill(.white.opacity(0.2))
+                        .frame(width: isIPad ? 40 : 32, height: isIPad ? 40 : 32)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: isIPad ? 18 : 14))
+                        .foregroundColor(.white)
+                }
                 Spacer()
-                Text("DAILY")
-                    .font(.system(size: 9, weight: .black))
-                    .foregroundColor(.white.opacity(0.8))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.black.opacity(0.1))
+                Text("NEW")
+                    .font(.system(size: isIPad ? 12 : 10, weight: .black))
+                    .foregroundColor(.white.opacity(0.9))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.15))
                     .clipShape(Capsule())
             }
             
             Text(task.title)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .font(.system(size: isIPad ? 18 : 14, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
@@ -226,27 +227,27 @@ struct DailyTaskCard: View {
                 
             Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(width: 145, height: 120)
+        .padding(16)
+        .frame(width: isIPad ? 220 : 160, height: isIPad ? 160 : 130)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: scheme == .dark ?
-                            [Color.purple.opacity(0.7), Color.blue.opacity(0.6)] :
-                            [Color.pink.opacity(0.8), Color.purple.opacity(0.7)],
+                        colors: self.scheme == .dark ?
+                            [Color.purple.opacity(0.8), Color.blue.opacity(0.7)] :
+                            [Color.pink.opacity(0.9), Color.purple.opacity(0.8)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
         )
         .shadow(
-            color: (scheme == .dark ? Color.purple : Color.pink).opacity(0.2),
-            radius: 8, x: 0, y: 4
+            color: (self.scheme == .dark ? Color.purple : Color.pink).opacity(0.3),
+            radius: 10, x: 0, y: 5
         )
     }
 }
@@ -259,20 +260,27 @@ struct HeaderActionButton: View {
     let action: () -> Void
     @Environment(\.colorScheme) private var scheme
     
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: isIPad ? 10 : 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: isIPad ? 18 : 14, weight: .bold))
                 Text(title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: isIPad ? 18 : 14, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .foregroundColor(isLocked ? (scheme == .dark ? .white.opacity(0.6) : .black.opacity(0.5)) : (scheme == .dark ? color.opacity(0.9) : color))
-            .padding(.vertical, 12)
+            .foregroundColor(isLocked ? (self.scheme == .dark ? .white.opacity(0.6) : .black.opacity(0.5)) : (self.scheme == .dark ? color.opacity(0.9) : color))
+            .padding(.vertical, isIPad ? 16 : 12)
+            .padding(.horizontal, isIPad ? 12 : 8)
             .frame(maxWidth: .infinity)
             .background(
                 Capsule()
-                    .fill(scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+                    .fill(self.scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
             )
             .overlay(
                 Capsule()

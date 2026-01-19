@@ -3,45 +3,55 @@ import SwiftUI
 struct PosterCell: View {
     @EnvironmentObject var vm: PosterViewModel
     @EnvironmentObject var store: StoreKitManager
+    @Environment(\.colorScheme) private var scheme
     let task: Challenge
     let displayNumber: Int? // Overrides task.number if provided
     let onScratchReveal: () -> Void
     let onOpenTask: () -> Void
     let redactedExplicit: Bool
     @State private var isAnimating = false
+    
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
 
     var body: some View {
         ZStack {
-            // ... (keep card background)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(vm.isRevealed(task) ? 
-                      LinearGradient(colors: [Color("revealed1"), Color("revealed2")], startPoint: .topLeading, endPoint: .bottomTrailing) :
-                      LinearGradient(colors: [Color("cardBg1"), Color("cardBg2")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(LinearGradient(colors: [.white.opacity(0.15), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-
+            // Main Card Background
             let isRevealed = vm.isRevealed(task) && !redactedExplicit
             
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(isRevealed ? 
+                      LinearGradient(colors: [Color("revealed1"), Color("revealed2")], startPoint: .topLeading, endPoint: .bottomTrailing) :
+                      LinearGradient(colors: [Color("cardBg1"), Color("cardBg2")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .shadow(color: .black.opacity(self.scheme == .dark ? 0.4 : 0.15), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(self.scheme == .dark ? 0.15 : 0.3), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+
             if redactedExplicit && vm.isRevealed(task) {
-                // ... redacted styling ...
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(LinearGradient(colors: [Color.gray.opacity(0.35), Color.gray.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                    )
-                    .overlay(
-                        VStack(spacing: 6) {
-                            Image(systemName: "eye.slash.fill")
-                                .foregroundColor(.white.opacity(0.8))
-                            Text("Hidden for privacy")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                    )
+                // Redacted styling
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                    
+                    VStack(spacing: 6) {
+                        Image(systemName: "eye.slash.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.6))
+                        Text("Private")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
             } else if isRevealed {
                 let neonColor = NeonColors.color(for: task.difficulty)
                 Button { 
@@ -52,89 +62,95 @@ struct PosterCell: View {
                     }
                     onOpenTask()
                 } label: {
-                    VStack(spacing: 4) {
-                        if let img = task.imageName, task.category == .extraHot {
-                            Image(img)
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 32, height: 32)
-                                .foregroundColor(neonColor)
-                                .neonGlow(neonColor)
-                                .blur(radius: (task.isLocked && !store.hasSubscription) ? 6 : 0)
-                        } else {
-                            Image(systemName: iconForCategory(task.category))
-                                .font(.system(size: 22))
-                                .foregroundColor(neonColor)
-                                .neonGlow(neonColor)
+                    VStack(spacing: isIPad ? 10 : 6) {
+                        ZStack {
+                            Circle()
+                                .fill(neonColor.opacity(0.15))
+                                .frame(width: isIPad ? 60 : 36, height: isIPad ? 60 : 36)
+                                .blur(radius: 4)
+                            
+                            if let img = task.imageName, task.category == .extraHot {
+                                Image(img)
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: isIPad ? 50 : 28, height: isIPad ? 50 : 28)
+                                    .foregroundColor(neonColor)
+                                    .neonGlow(neonColor)
+                                    .blur(radius: (task.isLocked && !store.hasSubscription) ? 6 : 0)
+                            } else {
+                                Image(systemName: iconForCategory(task.category))
+                                    .font(.system(size: isIPad ? 32 : 20, weight: .bold))
+                                    .foregroundColor(neonColor)
+                                    .neonGlow(neonColor)
+                            }
                         }
                         
                         Text(shortLabel(for: task))
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: isIPad ? 18 : 12, weight: .black, design: .rounded))
                             .foregroundColor(.white.opacity(0.9))
                             .lineLimit(1)
-                            .minimumScaleFactor(0.8)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(4)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .transition(.asymmetric(
-                    insertion: .scale(scale: 0.1, anchor: .center).combined(with: .opacity).animation(.spring(response: 0.4, dampingFraction: 0.5)),
+                    insertion: .scale(scale: 0.1, anchor: .center).combined(with: .opacity).animation(.spring(response: 0.4, dampingFraction: 0.6)),
                     removal: .opacity
                 ))
             } else {
+                // Scratch Layer
                 ZStack {
-                    Rectangle()
-                        .fill(LinearGradient(colors: [Color("cardBg1"), Color("cardBg2")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .overlay(Rectangle().stroke(Color.white.opacity(0.08)))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color("cardBg1"), Color("cardBg2")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                     
-                    VStack(spacing: 6) {
-                        Image(systemName: "hand.tap.fill")
-                            .foregroundColor(.white.opacity(0.85))
-                            .font(.system(size: 20))
-                            .scaleEffect(isAnimating ? 1.15 : 1.0)
-                            .opacity(isAnimating ? 0.8 : 1.0)
+                    VStack(spacing: isIPad ? 8 : 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: isIPad ? 22 : 14))
+                            .foregroundColor(.white.opacity(0.4))
+                            .scaleEffect(isAnimating ? 1.2 : 1.0)
+                        
                         Text("\(displayNumber ?? task.number)")
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .font(.system(size: isIPad ? 48 : 28, weight: .black, design: .rounded))
                             .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                     }
-                    .allowsHitTesting(false)
                 }
                 .onTapGesture {
                     Haptics.impact()
                     onScratchReveal()
                 }
-                .onTapGesture(count: 2) {
-                    Haptics.impact()
-                    onScratchReveal()
-                }
                 .onAppear {
-                    withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
                         isAnimating = true
                     }
                 }
             }
-            // ... (keep lock icon overlay)
+            
+            // Lock Overlay
             if vm.isRevealed(task) && task.isLocked && !store.hasSubscription {
                  VStack {
                     HStack {
                         Spacer()
                         Image(systemName: "lock.fill")
-                            .font(.system(size: 10))
-                            .padding(4)
-                            .background(Color.black.opacity(0.6))
+                            .font(.system(size: 8, weight: .bold))
+                            .padding(5)
+                            .background(.ultraThinMaterial)
                             .clipShape(Circle())
                             .foregroundColor(.yellow)
-                            .padding(2)
+                            .padding(6)
                     }
                     Spacer()
                 }
             }
         }
-        .aspectRatio(1, contentMode: .fill)
+        .aspectRatio(1, contentMode: .fit)
     }
     
     private func iconForCategory(_ category: TaskCategory) -> String {

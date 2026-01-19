@@ -2,12 +2,13 @@ import SwiftUI
 
 struct FilterTabs: View {
     @Binding var selectedTab: PosterGridView.FilterTab
+    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
     @Environment(\.colorScheme) private var scheme
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(orderedTabs) { tab in
+                ForEach(visibleTabs) { tab in
                     Button {
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                             selectedTab = tab
@@ -30,6 +31,19 @@ struct FilterTabs: View {
                 }
                 Spacer(minLength: 0)
             }
+        }
+        .onChange(of: hideExplicit) { newValue in
+            if newValue && selectedTab == .kama {
+                selectedTab = .all
+            }
+        }
+    }
+    
+    private var visibleTabs: [PosterGridView.FilterTab] {
+        if hideExplicit {
+            return [.all, .qna, .indoor, .outdoor]
+        } else {
+            return [.all, .qna, .indoor, .outdoor, .kama]
         }
     }
     
@@ -56,9 +70,4 @@ struct FilterTabs: View {
             return scheme == .dark ? .clear : Color.pink.opacity(0.1)
         }
     }
-    
-    private var orderedTabs: [PosterGridView.FilterTab] {
-        [.all, .qna, .indoor, .outdoor, .kama]
-    }
 }
-
