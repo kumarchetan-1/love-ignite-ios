@@ -260,6 +260,7 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $store.showPaywall) {
             PaywallView()
+                .environmentObject(store)
         }
         .sheet(isPresented: $showTermsSheet) {
             TermsOfServiceView()

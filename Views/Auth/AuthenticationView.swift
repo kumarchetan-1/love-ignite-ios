@@ -147,8 +147,10 @@ struct AuthenticationView: View {
                     
                     Spacer()
                 }
+                .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 450 : .infinity)
                 .padding()
             }
+            .frame(maxWidth: .infinity)
         }
         .sheet(isPresented: $authManager.needsVerification) {
             VerificationView()

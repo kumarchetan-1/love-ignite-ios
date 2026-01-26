@@ -2,7 +2,7 @@ import SwiftUI
 import StoreKit
 
 struct PaywallView: View {
-    @EnvironmentObject var storeKitManager: StoreKitManager
+    @EnvironmentObject var store: StoreKitManager
     @Environment(\.dismiss) var dismiss
     @State private var isPurchasing = false
 
@@ -42,61 +42,66 @@ struct PaywallView: View {
 
                 Spacer()
 
-                // Purchase Button
-                if let product = storeKitManager.products.first {
-                    Button {
-                        Task {
-                            isPurchasing = true
-                            do {
-                                _ = try await storeKitManager.purchase()
-                                dismiss()
-                            } catch {
-                                // Silent fail
+                // Purchase Buttons
+                VStack(spacing: 12) {
+                    ForEach(store.products) { product in
+                        Button {
+                            Task {
+                                isPurchasing = true
+                                do {
+                                    _ = try await store.purchase(product)
+                                    dismiss()
+                                } catch {
+                                    // Silent fail
+                                }
+                                isPurchasing = false
                             }
-                            isPurchasing = false
-                        }
-                    } label: {
-                        HStack {
-                            if isPurchasing {
-                        ProgressView()
-                            .tint(.white)
-                            } else {
-                                Text("Upgrade for \(product.displayPrice)")
-                                    .fontWeight(.bold)
+                        } label: {
+                            HStack {
+                                if isPurchasing {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text("\(product.displayName) for \(product.displayPrice)")
+                                        .fontWeight(.bold)
+                                }
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing))
+                            )
+                            .foregroundColor(.white)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing))
-                        )
-                        .foregroundColor(.white)
+                        .disabled(isPurchasing)
                     }
-                    .disabled(isPurchasing)
-                    .padding(.horizontal)
-                } else if isPurchasing {
+                }
+                .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : .infinity)
+                .padding(.horizontal)
+                
+                if store.products.isEmpty && isPurchasing {
                     ProgressView().tint(.pink)
-                } else {
+                } else if store.products.isEmpty {
                     VStack(spacing: 10) {
                         ProgressView().tint(.pink)
                         Text("Fetching products...")
                             .font(.caption)
                             .foregroundColor(.gray)
                         Button("Retry") {
-                                Task {
-                                await storeKitManager.fetchProducts()
+                            Task {
+                                await store.fetchProducts()
                             }
                         }
-                                                .font(.caption)
+                        .font(.caption)
                         .foregroundColor(.pink)
-                                        }
-                                    }
+                    }
+                }
                 
                 Button("Restore Purchase") {
                     Task {
-                        await storeKitManager.updatePurchaseStatus()
-                        if !storeKitManager.purchasedProductIDs.isEmpty {
+                        await store.updatePurchaseStatus()
+                        if !store.purchasedProductIDs.isEmpty {
                             try? await BackendService.shared.setPremiumStatus(isPremium: true)
                             dismiss()
                         }
@@ -111,6 +116,10 @@ struct PaywallView: View {
                         .font(.footnote)
                 .foregroundColor(.gray.opacity(0.6))
                 .padding(.bottom, 20)
+            }
+        .onAppear {
+            Task {
+                await store.fetchProducts()
             }
         }
     }

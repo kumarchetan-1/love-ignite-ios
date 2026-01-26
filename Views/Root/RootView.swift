@@ -25,6 +25,8 @@ struct RootView: View {
                                 .tag(0)
                             Label("Medals", systemImage: "star.fill")
                                 .tag(1)
+                            Label("Chat", systemImage: "bubble.left.and.bubble.right.fill")
+                                .tag(3)
                             Label("Settings", systemImage: "gearshape.fill")
                                 .tag(2)
                         }
@@ -44,6 +46,8 @@ struct RootView: View {
                                 PosterGridView()
                             case 1:
                                 AchievementsView()
+                            case 3:
+                                ChatRootView()
                             case 2:
                                 SettingsView()
                             default:
@@ -60,6 +64,9 @@ struct RootView: View {
                                 .transition(.asymmetric(insertion: .opacity, removal: .opacity))
                         } else if selection == 1 {
                             AchievementsView()
+                                .transition(.opacity)
+                        } else if selection == 3 {
+                            ChatRootView()
                                 .transition(.opacity)
                         } else {
                             SettingsView()
@@ -80,12 +87,16 @@ struct RootView: View {
                         TabButton(icon: "star.fill", title: "Medal", selected: selection == 1, namespace: ns) {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 1 }
                         }
+
+                        TabButton(icon: "bubble.left.and.bubble.right.fill", title: "Chat", selected: selection == 3, namespace: ns) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 3 }
+                        }
                         
                         TabButton(icon: "gearshape.fill", title: "More", selected: selection == 2, namespace: ns) {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 2 }
                         }
                     }
-                    .frame(width: isIPad ? 500 : 260)
+                    .frame(width: isIPad ? 560 : 320)
                     .padding(.vertical, isIPad ? 18 : 8)
                     .background(
                         ZStack {

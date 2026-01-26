@@ -190,6 +190,7 @@ struct PosterGridView: View {
         .sheet(isPresented: $store.showPaywall) {
             PaywallView()
                 .environmentObject(store)
+                .environmentObject(vm)
         }
     }
 }

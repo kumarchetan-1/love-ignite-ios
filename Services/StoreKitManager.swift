@@ -42,9 +42,7 @@ class StoreKitManager: ObservableObject {
         }
     }
     
-    func purchase() async throws -> StoreKit.Transaction? {
-        guard let product = products.first else { return nil }
-        
+    func purchase(_ product: Product) async throws -> StoreKit.Transaction? {
         let result = try await product.purchase()
         
         switch result {
