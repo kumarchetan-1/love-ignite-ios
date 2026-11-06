@@ -7,7 +7,7 @@ struct PrivacyPolicyView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Last Updated: January 2026")
+                    Text("Last Updated: November 2026")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -24,6 +24,8 @@ struct PrivacyPolicyView: View {
                     SectionView(title: "6. Children's Privacy", content: "Love Ignite is not intended for children under the age of 18. We do not knowingly collect personal information from children.")
                     
                     SectionView(title: "7. Contact Us", content: "If you have any questions about this Privacy Policy, please contact us at kumarchetan.npr@gmail.com")
+
+                    SectionView(title: "8. Love Notes and Optional AI", content: "LDiary notes, folders, and reflections are stored on your device and in your iCloud key-value storage, along with cycle and mood logs. Photos inside a note stay in the app's local storage on the device that added them, because iCloud key-value storage is too small for images. Daily challenges still use one fixed, non-personal prompt. If you tap Make it romantic or Analyse my notes, the note text (not photos or videos) is sent to Google Gemini through Firebase only after you confirm on the consent screen. The last reflection is cached on this device, so opening LDiary does not send notes again.")
                     
                     Spacer(minLength: 50)
                 }

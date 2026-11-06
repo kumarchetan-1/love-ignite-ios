@@ -24,17 +24,21 @@ struct RootView: View {
                         .opacity(sel == 0 ? 1 : 0)
                         .allowsHitTesting(sel == 0)
 
-                    MoodTrackerView()
+                    LDiaryView()
                         .opacity(sel == 1 ? 1 : 0)
                         .allowsHitTesting(sel == 1)
 
-                    CycleTrackerView()
+                    MoodTrackerView()
                         .opacity(sel == 2 ? 1 : 0)
                         .allowsHitTesting(sel == 2)
 
-                    SettingsView()
+                    CycleTrackerView()
                         .opacity(sel == 3 ? 1 : 0)
                         .allowsHitTesting(sel == 3)
+
+                    SettingsView()
+                        .opacity(sel == 4 ? 1 : 0)
+                        .allowsHitTesting(sel == 4)
                 }
                 .ignoresSafeArea(.container, edges: .bottom)
 
@@ -42,33 +46,41 @@ struct RootView: View {
                 VStack {
                     Spacer()
                         
-                        let barWidth = geometry.size.width * 0.90
-                        let slotWidth: CGFloat = isIPad ? 112 : 62
+                        let barWidth = geometry.size.width * (isIPad ? 0.86 : 0.94)
+                        let tabSpacing: CGFloat = isIPad ? 8 : 4
+                        let horizontalPad: CGFloat = isIPad ? 16 : 10
+                        let tabCount: CGFloat = 5
+                        let slotWidth = max(52, (barWidth - horizontalPad * 2 - tabSpacing * (tabCount - 1)) / tabCount)
 
-                        HStack(spacing: isIPad ? 12 : 6) {
+                        HStack(spacing: tabSpacing) {
                             TabButton(icon: "square.grid.3x3.fill", title: "Poster", selected: selection == 0, namespace: ns) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 0 }
                             }
                             .frame(width: slotWidth)
 
-                            TabButton(icon: "face.smiling.fill", title: "Mood", selected: selection == 1, namespace: ns) {
+                            TabButton(icon: "book.closed.fill", title: "LDiary", selected: selection == 1, namespace: ns) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 1 }
                             }
                             .frame(width: slotWidth)
 
-                            TabButton(icon: "calendar.badge.clock", title: "Cycle", selected: selection == 2, namespace: ns) {
+                            TabButton(icon: "face.smiling.fill", title: "Mood", selected: selection == 2, namespace: ns) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 2 }
                             }
                             .frame(width: slotWidth)
-                            
-                            TabButton(icon: "gearshape.fill", title: "More", selected: selection == 3, namespace: ns) {
+
+                            TabButton(icon: "calendar.badge.clock", title: "Cycle", selected: selection == 3, namespace: ns) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 3 }
+                            }
+                            .frame(width: slotWidth)
+                            
+                            TabButton(icon: "gearshape.fill", title: "More", selected: selection == 4, namespace: ns) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = 4 }
                             }
                             .frame(width: slotWidth)
                         }
                         .frame(width: isIPad ? min(720, barWidth) : barWidth)
                         // Outer padding inside capsule so tabs never touch edges
-                        .padding(.horizontal, isIPad ? 18 : 14)
+                        .padding(.horizontal, isIPad ? 16 : 10)
                         .padding(.vertical, isIPad ? 16 : 10)
                         .background(
                             ZStack {

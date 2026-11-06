@@ -37,6 +37,8 @@ struct TabButton: View {
 
                 Text(title)
                     .font(.system(size: isIPad ? 18 : 10, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .foregroundColor(selected ? activeColor : inactiveColor)
             }
             .frame(maxWidth: .infinity)
