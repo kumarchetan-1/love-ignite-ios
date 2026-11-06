@@ -50,5 +50,9 @@ enum ThemePalette {
             return Color.white.opacity(0.7)
         }
     }
+
+    static let neonPurple = Color(red: 0.62, green: 0.36, blue: 1.0)
+    static let neonGreen = Color(hue: 0.33, saturation: 0.92, brightness: 0.96)
+    static let neonPink = Color(red: 1.0, green: 0.31, blue: 0.64)
 }
 
