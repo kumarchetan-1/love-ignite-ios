@@ -1,367 +1,191 @@
 import Foundation
 
+/// Content for the Love Ignite card grid.
+/// Love Ignite helps couples with modern dating problems: communication, mismatched
+/// expectations, conflict, texting anxiety, date ideas and regular check-ins.
+/// Levels: easy = Spark, medium = Connect, hard = Deepen, extreme = Grow.
 struct TasksData {
-    // We now separate the logic:
-    // 1. generateGridTasks(count: 200) -> for the main grid
-    // 2. generateDailyTasks() -> for the top 5 distinct tasks
-    // Note: position lock state is provided externally so we can preserve locks across relocks.
-    
+
     static func generateTasks(
-        count: Int = 236,
+        count: Int = 0,
         existingLocks: [String: Bool]? = nil
     ) -> (tasks: [Challenge], locks: [String: Bool]) {
-        // --- 1. Master Content Pools ---
-        let romanticTasks = [
-            "Cook a meal together from scratch.", "Write a love letter to each other.",
-            "Plan a dream vacation.", "Recreate your first date.",
-            "Give each other a 15-minute massage.", "Watch the sunrise or sunset together.",
-            "Have a technology-free evening.", "Create a couple's bucket list.",
-            "Dance to 'your song' in the living room.", "Go for a long walk holding hands.",
-            "Leave a surprise note in a pocket/purse.", "Share your favorite childhood memory.",
-            "Make a photo album or collage.", "Have a picnic (indoor or outdoor).",
-            "Read a book to each other.", "Draw or paint each other's portrait.",
-            "Bake a dessert together.", "Take a bubble bath together.",
-            "Stargaze and find constellations.", "Compliment 5 things about each other.",
-            "Plan a surprise date night.", "Visit a place you've never been.",
-            "Learn a new skill together.", "Share a secret you've never told anyone.",
-            "Write down 3 goals for your future.", "Make a blanket fort and watch a movie.",
-            "Feed each other chocolate or fruit.", "Go to a museum or art gallery.",
-            "Exercise or do yoga together.", "Plant a tree or flowers together.",
-            "Have breakfast in bed.", "Write a poem for your partner.",
-            "Create a custom cocktail/mocktail.", "Play a board game or card game.",
-            "Do a puzzle together.", "Volunteer together for a day.",
-            "Go wine or cheese tasting.", "Recreate a favorite movie scene.",
-            "Have a pillow fight.", "Take a nap together.",
-            "Visit a local market.", "Go bowling or mini-golfing.",
-            "Sing karaoke together.", "Make a time capsule.",
-            "Go for a drive with no destination.", "Watch home movies or old videos.",
-            "Make homemade pizza.", "Whisper something sweet in public.",
-            "Hold eye contact for 2 minutes.", "Kiss in the rain (or shower).",
-            "Build a piece of furniture together.", "Have a video game night.",
-            "Go to a comedy club.", "Plan a staycation.",
-            "Go fruit picking.", "Take a pottery class.",
-            "Go to a jazz club.", "Rent a tandem bike.",
-            "Go for a night swim.", "Write a song together.",
-            "Blind taste test with food.", "Go to an aquarium.",
-            "Have a fondue night.", "Go camping in backyard.",
-            "Write a seasonal bucket list.", "Go to a drive-in movie.",
-            "Make a scrapbook.", "Go to trivia night.",
-            "Spa day at home.", "Visit botanical garden.",
-            // Respect, empathy, commitment, loyalty
-            "Write promises to each other and read them aloud.",
-            "List 3 ways you’ll support each other this month.",
-            "Share a recent worry and truly listen to each other.",
-            "Plan a small act of service your partner will appreciate.",
-            "Celebrate a personal win of your partner with a toast.",
-            "Check in on each other’s goals and offer help.",
-            "Revisit a past disagreement and thank each other for growth.",
-            "Draft a couple’s mission statement together."
-        ] // Approx 70 items
 
-        let locationTasks = [
-            "Kiss in an elevator.", "Make out in a parked car.",
-            "Hold hands in a cinema.", "Quick kiss at a red light.",
-            "Flirt at a grocery store.", "Whisper in a library.",
-            "Cuddle on a park bench.", "Hold hands under dinner table.",
-            "Sneak a kiss in a fitting room.", "Hug tight at a train station.",
-            "Touch feet under a desk.", "Share a drink with two straws.",
-            "Kiss on a bridge.", "Lean on each other on a bus.",
-            "Take a goofy selfie in a crowd.", "Slow dance in kitchen.",
-            "Carry partner across room.", "Sit on partner's lap.",
-            "Walk in rain without umbrella.", "Kiss at top of hill.",
-            "Kiss on Ferris wheel.", "Hold hands skating.",
-            "Kiss under streetlamp.", "Cuddle by fireplace.",
-            "Kiss in photo booth.", "Hold hands in museum.",
-            "Kiss on a boat.", "Cuddle in hammock.",
-            "Kiss in snow.", "Hold hands at concert.",
-            "Kiss on balcony.", "Cuddle in tent.",
-            "Kiss in pool.", "Hold hands on plane.",
-            "Kiss at midnight.", "Cuddle on rooftop.",
-            "Pose for a sweet photo in a park.", "Cheer each other loudly at a game.",
-            "Compliment each other in front of friends.", "Swap jackets and laugh together.",
-            // Respect/loyalty in public
-            "Introduce your partner proudly to someone new.",
-            "Hold hands and thank each other after an event.",
-            "Stand up for your partner in a playful debate.",
-            "Leave a kind note in their bag before heading out.",
-            "Let them choose the restaurant and support it fully."
-        ] // refreshed outdoor-friendly set
-        
-        let questionTasks = [
-            "Favorite memory of us?", "Biggest turn-on?",
-            "Dream date?", "Us in 5 years?",
-            "Love about my body?", "Most romantic thing I've done?",
-            "Favorite way to be touched?", "Fantasy to share?",
-            "Song that reminds you of me?", "Go anywhere now?",
-            "Favorite feature of mine?", "First fell for me?",
-            "Makes you feel loved?", "New thing to try in bed?",
-            "Perfect Sunday?", "Habit you adore?",
-            "Laugh hardest?", "Best gift ever?",
-            "Favorite smell on me?", "Movie character like me?",
-            "Love language?", "Secret talent?",
-            "Biggest fear?", "Proudest accomplishment?",
-            "Favorite childhood tradition?", "Favorite way to relax?",
-            "Want to learn?", "Favorite book?",
-            "Favorite movie?", "Favorite food?",
-            "Dream job?", "Favorite travel destination?",
-            "Favorite season?", "Favorite holiday?",
-            "Favorite animal?", "Favorite color?",
-            "Favorite flower?", "Favorite scent?",
-            "Favorite dessert?", "Favorite drink?"
-        ] // 40 items
+        // Date ideas (category .general)
+        let dateIdeas = [
+            "Cook a new recipe together from scratch.", "Write each other a short letter and swap.",
+            "Plan a dream trip on a shared map.", "Recreate your first date.",
+            "Watch the sunset together, phones away.", "Have a tech-free evening.",
+            "Make a couple's bucket list of 10 things.", "Dance to 'your song' in the living room.",
+            "Take a long walk with no destination.", "Share your favourite childhood memory.",
+            "Make a photo collage of your year.", "Have an indoor picnic.",
+            "Read the first chapter of a book to each other.", "Draw each other's portrait in 5 minutes.",
+            "Bake a dessert together.", "Stargaze and find three constellations.",
+            "Plan a surprise date for next weekend.", "Visit a place neither of you has been.",
+            "Learn a new skill together from a video.", "Build a blanket fort and watch a movie.",
+            "Go to a museum or art gallery.", "Do a workout or yoga session together.",
+            "Plant something and look after it together.", "Make breakfast for each other.",
+            "Invent a signature mocktail.", "Play a board game or card game.",
+            "Do a jigsaw puzzle together.", "Volunteer together for an afternoon.",
+            "Have a homemade pizza night.", "Take a pottery or painting class.",
+            "Go to a trivia night as a team.", "Have a spa evening at home.",
+            "Make a time capsule to open in a year.", "Have a karaoke night.",
+            "Try a cuisine neither of you has eaten.", "Make a playlist for each other."
+        ]
 
+        // Out & About (category .locations)
+        let outAndAbout = [
+            "Hold hands on a walk through a park.", "Take a goofy selfie in a crowd.",
+            "Find a quiet bench and share one wish for the future.", "Visit a local market and pick ingredients for dinner.",
+            "Go bowling or mini-golfing.", "Ride a tandem bike or rent bikes together.",
+            "Visit a botanical garden.", "Go fruit picking.",
+            "Try a new café and order for each other.", "Go to a live music night.",
+            "Take a day trip to a nearby town.", "Watch a street performer and tip them together.",
+            "Go to a comedy show.", "Explore a bookshop and buy each other a book.",
+            "Have a picnic in a new spot.", "Go to an aquarium or zoo.",
+            "Introduce your partner proudly to someone new.", "Cheer for each other at a game.",
+            "Let them choose the restaurant and enjoy it fully.", "Go on a sunrise walk.",
+            "Try a dance class together.", "Go to a farmers' market and cook what you find.",
+            "Take photos of each other at a favourite spot.", "Find the best street food in your city."
+        ]
+
+        // Talk prompts for modern dating (category .questions)
+        let talkPrompts = [
+            "How often do you like to text during the day?",
+            "What does a 'good morning' text mean to you?",
+            "When I don't reply quickly, what goes through your mind?",
+            "What's one thing about dating apps you're glad we left behind?",
+            "How do you like to be comforted after a hard day?",
+            "What's your ideal balance of time together and time apart?",
+            "What does commitment look like to you this year?",
+            "What's one small thing I do that makes you feel loved?",
+            "How do you prefer to plan dates: spontaneous or scheduled?",
+            "What's a money habit you'd like us to talk about?",
+            "How do you feel about sharing our relationship on social media?",
+            "Which of my friends do you want to know better?",
+            "What's a dealbreaker you've learned from past relationships?",
+            "What's one goal you'd love my support with?",
+            "How do you know when you need space?",
+            "What's your favourite memory of us so far?",
+            "Where do you see us in five years?",
+            "What's your love language, and has it changed?",
+            "What family tradition do you want to keep?",
+            "What helps you feel safe bringing up a problem?",
+            "What's a compliment you'd love to hear more often?",
+            "How should we handle holidays with both families?",
+            "What does a perfect lazy Sunday look like?",
+            "What's something new you'd like us to try together?"
+        ]
+
+        // Relationship skills: communication, conflict, expectations, check-ins (category .techniques)
+        let skills = [
+            "Do a 10-minute weekly check-in: one high, one low, one wish.",
+            "Try the speaker-listener exercise: repeat back what you heard before replying.",
+            "Swap 'you always' for 'I feel ... when ...' in your next disagreement.",
+            "Agree on a pause word that means 'let's take 20 minutes and come back'.",
+            "Write down three expectations you have for weekends, then compare lists.",
+            "Each take the love-languages quiz and share your top two.",
+            "Plan one act of service in your partner's love language this week.",
+            "Talk about texting: how fast, how often, and what 'seen' means to each of you.",
+            "Share one thing that makes you anxious in dating and how your partner can help.",
+            "Make a repair plan: what each of you needs after an argument.",
+            "List three things you appreciate about your partner, out loud.",
+            "Set one shared goal for this month and a small first step.",
+            "Agree on how you'll split plans, chores or costs for the next date.",
+            "Describe your ideal week together, then find the overlap.",
+            "Practice a phone-free dinner and notice how the talk changes.",
+            "Revisit a past disagreement and say what you learned from it.",
+            "Share your boundaries around friends, exes and social media.",
+            "Talk about what 'exclusive' and 'serious' mean to each of you.",
+            "End the day by naming one thing your partner did well.",
+            "Write a couple's mission statement in three sentences.",
+            "Plan a monthly relationship check-in on your calendars.",
+            "Ask: 'What's one thing I could do to make this week easier for you?'",
+            "Share a worry and only listen — no fixing for 5 minutes.",
+            "Agree on how you'll make big decisions together."
+        ]
+
+        // 36 questions to build closeness (category .loveQnA)
         let loveQnA36 = [
             "Given the choice of anyone in the world, whom would you want as a dinner guest?",
             "Would you like to be famous? In what way?",
-            "Before making a telephone call, do you ever rehearse what you are going to say? Why?",
-            "What would constitute a perfect day for you?",
+            "Before making a phone call, do you ever rehearse what you're going to say? Why?",
+            "What would be a perfect day for you?",
             "When did you last sing to yourself? To someone else?",
             "If you could live to 90 with either the mind or body of a 30-year-old for the last 60 years, which would you choose?",
-            "Do you have a secret hunch about how you will die?",
             "Name three things you and your partner appear to have in common.",
             "For what in your life do you feel most grateful?",
             "If you could change anything about the way you were raised, what would it be?",
             "Take four minutes and tell your partner your life story in as much detail as possible.",
-            "If you could wake up tomorrow having gained any one quality or ability, what would it be?",
-            "If a crystal ball could tell you the truth about yourself, your life, the future, or anything else, what would you want to know?",
-            "Is there something that you've dreamed of doing for a long time? Why haven't you done it?",
+            "If you could wake up tomorrow having gained one quality or ability, what would it be?",
+            "If a crystal ball could tell you the truth about anything, what would you want to know?",
+            "Is there something you've dreamed of doing for a long time? Why haven't you done it?",
             "What is the greatest accomplishment of your life?",
             "What do you value most in a friendship?",
             "What is your most treasured memory?",
-            "What is your most terrible memory?",
-            "If you knew that in one year you would die suddenly, would you change anything about the way you are now living? Why?",
+            "If you knew you had one year left, would you change how you're living now? Why?",
             "What does friendship mean to you?",
             "What roles do love and affection play in your life?",
-            "Alternate sharing something you consider a positive characteristic of your partner. Share a total of five items.",
-            "How close and warm is your family? Do you feel your childhood was happier than most other people's?",
-            "How do you feel about your relationship with your mother?",
-            "Make three true \"we\" statements each. For instance, \"We are both in this room feeling...\"",
+            "Take turns sharing five positive characteristics of your partner.",
+            "How close and warm is your family?",
+            "Make three true \"we\" statements each.",
             "Complete this sentence: \"I wish I had someone with whom I could share...\"",
-            "If you were going to become a close friend with your partner, please share what would be important for them to know.",
-            "Tell your partner what you like about them; be very honest this time, saying things that you might not say to someone you've just met.",
+            "What would be important for your partner to know if you became close friends?",
+            "Tell your partner what you like about them; be honest.",
             "Share an embarrassing moment in your life.",
             "When did you last cry in front of another person? By yourself?",
-            "Tell your partner something that you like about them already.",
             "What, if anything, is too serious to be joked about?",
-            "If you were to die this evening with no opportunity to communicate with anyone, what would you most regret not having told someone? Why haven't you told them yet?",
-            "Your house, containing everything you own, catches fire. After saving your loved ones and pets, you have time to safely make a final dash to save any one item. What would it be? Why?",
-            "Of all the people in your family, whose death would you find most disturbing? Why?",
-            "Share a personal problem and ask your partner's advice on how they might handle it. Then, ask your partner to reflect on how you seem to be feeling about the problem you have chosen."
+            "What would you most regret not having told someone? Why haven't you told them yet?",
+            "Your home catches fire. After saving loved ones and pets, what one item would you save? Why?",
+            "Share a personal problem and ask your partner how they might handle it.",
+            "What is your favourite way to spend a weekend together?"
         ]
 
-        let intimateTasks = [
-            "Blindfold and feed partner.", "Sensual hand massage.",
-            "Whisper naughty secret.", "Strip card game.",
-            "Share untold fantasy.", "5 mins just kissing.",
-            "Trace words on back.", "Shower by candlelight.",
-            "Foot massage with oil.", "Roleplay meeting at bar.",
-            "Wear something partner loves.", "Risky text from other room.",
-            "Feather/ice on skin.", "Describe what you want.",
-            "Eye contact during intimacy.", "Explore new zone.",
-            "Read erotic story.", "Temperature play.",
-            "Scalp massage.", "Sleep naked.",
-            "Blindfold touch guessing game."
-        ] // 21 items
-        
-        let extremePlayfulTasks = [
-            "Create a secret code word that means “now”.",
-            "Play a timer game: 60-second kiss, no words.",
-            "Blindfold and guess the scent on your skin.",
-            "Take turns giving 3 instructions, no talking.",
-            "Write a one-line fantasy and swap cards.",
-            "Slow dance in the dark, no music.",
-            "Trace a path from wrist to shoulder with eyes closed.",
-            "Share a roleplay idea and set a safe word.",
-            "Build a “do not disturb” fort with blankets.",
-            "Warm a towel and wrap their hands before a massage."
-        ]
+        var pool: [(String, TaskCategory)] = []
+        pool += dateIdeas.map { ($0, .general) }
+        pool += outAndAbout.map { ($0, .locations) }
+        pool += talkPrompts.map { ($0, .questions) }
+        pool += skills.map { ($0, .techniques) }
+        pool += loveQnA36.map { ($0, .loveQnA) }
+        pool.shuffle()
 
-        // 2. Pools for mix & match
-        // We want every level to have a MIX of tasks + positions.
-        // Positions are restricted by difficulty as requested: "Only use respective kamasutra positions as well"
-        // But text tasks should be mixed? "every level should have mix of tasks not just questions..."
-        
-        // Let's pool all TEXT tasks together and assign them random difficulties or evenly distribute them?
-        // User said: "every level should have mix of tasks"
-        // User also said: "Only use respective kamasutra positions... easy position shouldn't be in other category"
-        
-        // Strategy:
-        // 1. Assign positions strictly to their level.
-        // 2. Mix all text tasks into one big pool.
-        // 3. Distribute text tasks evenly across the 4 levels to ensure variety in each level.
-        
-        var allTextTasks: [(title: String, cat: TaskCategory)] = []
-        allTextTasks.append(contentsOf: romanticTasks.map { ($0, .general) })
-        allTextTasks.append(contentsOf: locationTasks.map { ($0, .locations) })
-        allTextTasks.append(contentsOf: questionTasks.map { ($0, .questions) })
-        allTextTasks.append(contentsOf: intimateTasks.map { ($0, .techniques) })
-        allTextTasks.shuffle()
-        
-        // Prepare buckets
-        var easyTasks: [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)] = []
-        var mediumTasks: [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)] = []
-        var hardTasks: [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)] = []
-        var extremeTasks: [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)] = []
-        
-        // A. Distribute Positions (Strict Difficulty) with renamed assets
-        let easyAssets = [
-            "ks_01_cowgirl", "ks_02_doggy-style", "ks_03_standing-tiger", "ks_04_magic-mountain",
-            "ks_05_blow-job", "ks_06_nirvana-sex-pose", "ks_07_rocking-horse", "ks_08_sixty-nine-69",
-            "ks_09_the-indrani", "ks_10_lactose-licker", "ks_11_ribbon-sex", "ks_12_train-sex",
-            "ks_13_scissor-sex", "ks_14_barbell-sex", "ks_15_wall-sex-pose", "ks_16_cancer-sex-pose",
-            "ks_17_captain-sex-pose"
-        ]
-        let medAssets = [
-            "ks_18_london-bridge-sex-pose", "ks_19_ecstasy-sex-pose", "ks_20_basket-sex-pose",
-            "ks_21_prison-guard-sex-pose", "ks_22_aramel-sex-pose", "ks_23_frog-sex-pose",
-            "ks_24_chair-sex-pose", "ks_25_submissive-sex-pose", "ks_26_rainbow-sex-pose",
-            "ks_27_crucifixion-sex-pose", "ks_28_eiffel-tower-sex-pose", "ks_29_bud-sex-pose",
-            "ks_30_rose-sex-pose", "ks_31_straddle-sex-pose", "ks_32_cello-sex-pose",
-            "ks_33_whisper-sex-pose", "ks_34_aphrodite-sex-pose"
-        ]
-        let hardAssets = [
-            "ks_35_waterfall-sex-pose", "ks_36_workout-sex-pose", "ks_37_barbell-sex-pose",
-            "ks_38_wheelbarrow-sex-pose", "ks_39_narcissus-sex-pose", "ks_40_pisces-sex-pose",
-            "ks_41_dragon-sex-pose", "ks_42_spiderman-sex-pose", "ks_43_capricorn-sex-pose",
-            "ks_44_piledriver-sex-pose", "ks_45_yin-yang-sex-pose", "ks_46_accordion-sex-pose",
-            "ks_47_lock-sex-pose-1984891", "ks_48_italian-chandelier-sex-pose", "ks_49_gemini-sex-pose",
-            "ks_50_handstand-pyramid-pose", "ks_51_nun-sex-pose"
-        ]
-        let extremeAssets = [
-            "ks_52_bow-sex-pose", "ks_53_arch-sex-pose", "ks_54_superman-sex-pose",
-            "ks_55_angry-pirate-sex-pose", "ks_56_rabbit-ears-sex-pose", "ks_57_aquarius-sex-pose",
-            "ks_58_male-self-control", "ks_59_female-self-control"
-        ]
-        var lockState = existingLocks ?? [:]
-        
-        // Distribute the 36 "Love Questions": 9 for each of the 4 buckets
-        var qnaPool = loveQnA36.shuffled()
-        
-        // Unlock rules:
-        // - Easy/Medium: ~70% unlocked (lock ~30%)
-        // - Hard/Extreme: 50% locked as requested
-        func appendAssets(_ assets: [String], diff: Difficulty, bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], lockRatio: Double) {
-            for img in assets {
-                let isLocked: Bool
-                if let stored = lockState[img] {
-                    isLocked = stored
-                } else {
-                    let computed = Double.random(in: 0...1) < lockRatio
-                    lockState[img] = computed
-                    isLocked = computed
-                }
-                let taskTitle = "Try this position."
-                bucket.append((title: taskTitle, cat: .extraHot, diff: diff, img: img, locked: isLocked))
-            }
-        }
-        
-        appendAssets(easyAssets, diff: .easy, bucket: &easyTasks, lockRatio: 0.3)
-        appendAssets(medAssets, diff: .medium, bucket: &mediumTasks, lockRatio: 0.3)
-        appendAssets(hardAssets, diff: .hard, bucket: &hardTasks, lockRatio: 0.5)
-        appendAssets(extremeAssets, diff: .extreme, bucket: &extremeTasks, lockRatio: 0.5)
-        
-        // Distribute 9 QnA tasks to each bucket
-        func appendQnA(to bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], diff: Difficulty) {
-            for _ in 0..<9 {
-                if let q = qnaPool.popLast() {
-                    bucket.append((title: q, cat: .loveQnA, diff: diff, img: nil, locked: false))
-                }
-            }
-        }
-        
-        appendQnA(to: &easyTasks, diff: .easy)
-        appendQnA(to: &mediumTasks, diff: .medium)
-        appendQnA(to: &hardTasks, diff: .hard)
-        appendQnA(to: &extremeTasks, diff: .extreme)
+        let levels: [Difficulty] = [.easy, .medium, .hard, .extreme]
+        let perLevel = Int((Double(pool.count) / Double(levels.count)).rounded(.up))
 
-        // B. Fill remainder of each bucket (target 59) with Mixed Text Tasks
-        let targetPerCategory = 59
-        
-        func fillBucket(bucket: inout [(title: String, cat: TaskCategory, diff: Difficulty, img: String?, locked: Bool)], difficulty: Difficulty) {
-            while bucket.count < targetPerCategory {
-                if let task = allTextTasks.popLast() {
-                    bucket.append((title: task.title, cat: task.cat, diff: difficulty, img: nil, locked: false))
-                } else {
-                    break // Ran out of tasks
-                }
-            }
-        }
-        
-        fillBucket(bucket: &easyTasks, difficulty: .easy)
-        fillBucket(bucket: &mediumTasks, difficulty: .medium)
-        fillBucket(bucket: &hardTasks, difficulty: .hard)
-        // For extreme, if we run out of text tasks, use playful fallbacks
-        while extremeTasks.count < targetPerCategory {
-            if let task = allTextTasks.popLast() {
-                extremeTasks.append((title: task.title, cat: task.cat, diff: .extreme, img: nil, locked: false))
-            } else if let extra = extremePlayfulTasks.randomElement() {
-                extremeTasks.append((title: extra, cat: .techniques, diff: .extreme, img: nil, locked: false))
-            } else {
-                break
-            }
-        }
-        
-        // Shuffle within buckets so positions aren't all at the top
-        easyTasks.shuffle()
-        mediumTasks.shuffle()
-        hardTasks.shuffle()
-        extremeTasks.shuffle()
-        
-        // Combine in order (New 236 total: 59 per category)
-        let allSorted = easyTasks + mediumTasks + hardTasks + extremeTasks
-        
         var finalTasks: [Challenge] = []
-        for (index, item) in allSorted.enumerated() {
-            let id = "task_\(index)"
-            // Use index + 1 for counting 1..236
-            let number = index + 1
-            
+        for (index, item) in pool.enumerated() {
+            let level = levels[min(index / perLevel, levels.count - 1)]
             finalTasks.append(Challenge(
-                id: id,
-                number: number,
-                title: item.title,
-                category: item.cat,
-                difficulty: item.diff,
+                id: "task_\(index)",
+                number: index + 1,
+                title: item.0,
+                category: item.1,
+                difficulty: level,
                 hint: nil,
-                imageName: item.img,
-                isLocked: item.locked
-            ))
-        }
-        
-        return (finalTasks, lockState)
-    }
-    
-    // --- New: Tasks of the Day (5 Distinct, Indoor, Intimate) ---
-    static func generateDailyTasks() -> [Challenge] {
-        let dailyPool = [
-            "Build a cozy pillow fort and read together.",
-            "Share a slow dance in the kitchen to jazz.",
-            "Give each other a 5-minute foot rub.",
-            "Cook a new pasta recipe together.",
-            "Write down 3 things you love about each other.",
-            "Play a board game with loser giving a massage.",
-            "Take a warm bubble bath with candles.",
-            "Do a puzzle while listening to an audiobook.",
-            "Make homemade hot chocolate/cocktails.",
-            "Stargaze from the window/balcony."
-        ]
-        
-        // Pick 5 random unique
-        let selected = dailyPool.shuffled().prefix(5)
-        
-        var tasks: [Challenge] = []
-        for (i, txt) in selected.enumerated() {
-            tasks.append(Challenge(
-                id: "daily_\(i)",
-                number: i + 1,
-                title: txt,
-                category: .general,
-                difficulty: .medium, // Just a placeholder
-                hint: "Daily Special",
                 imageName: nil,
                 isLocked: false
             ))
         }
-        return tasks
+        return (finalTasks, [:])
+    }
+
+    /// Five daily connection prompts.
+    static func generateDailyTasks() -> [Challenge] {
+        let dailyPool = [
+            "Send a 'thinking of you' message with no emoji, just words.",
+            "Do a 5-minute check-in: how are you really today?",
+            "Cook something simple together.",
+            "Write down 3 things you love about each other.",
+            "Plan your next date in under 10 minutes.",
+            "Ask one question from the Talk deck over dinner.",
+            "Go for a 15-minute walk, phones in pockets.",
+            "Share one thing you're looking forward to this week.",
+            "Thank your partner for something small they did.",
+            "Make hot chocolate and talk about your week."
+        ]
+        return dailyPool.shuffled().prefix(5).enumerated().map { i, txt in
+            Challenge(id: "daily_\(i)", number: i + 1, title: txt, category: .general,
+                      difficulty: .medium, hint: "Daily Spark", imageName: nil, isLocked: false)
+        }
     }
 }

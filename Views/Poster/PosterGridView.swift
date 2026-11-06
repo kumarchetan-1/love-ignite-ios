@@ -2,8 +2,6 @@ import SwiftUI
 
 struct PosterGridView: View {
     @EnvironmentObject var vm: PosterViewModel
-    @EnvironmentObject var store: StoreKitManager
-    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
     @State private var selectedTab: FilterTab = .all
     
     @State private var selectedTask: Challenge?
@@ -11,104 +9,24 @@ struct PosterGridView: View {
     
     enum FilterTab: String, CaseIterable, Identifiable {
         case all = "All"
-        case qna = "QnA"
-        case indoor = "Indoor"
-        case outdoor = "Outdoor"
-        case kama = "Kamasutra Positions"
+        case talk = "Talk"
+        case skills = "Relationship Skills"
+        case dates = "Date Ideas"
+        case outdoor = "Out & About"
         
         var id: String { rawValue }
     }
     
-    // Love gesture replacements for explicit tasks (indoor)
-    private let indoorGestures: [String] = [
-        "Leave a lipstick kiss on a mirror for them to find.",
-        "Whisper a secret desire while holding hands.",
-        "Plan a surprise candlelit dessert tasting.",
-        "Give a slow back-trace with fingertips in the dark.",
-        "Share a fantasy over soft music and dim lights.",
-        "Hide a love note under their pillow.",
-        "Offer a slow hand massage with warm oil.",
-        "Dance chest-to-chest to a single song.",
-        "Brush their hair back and kiss their forehead.",
-        "Read a flirty poem to them in bed.",
-        "Do a blindfolded taste-guessing game.",
-        "Hold a 30-second gaze, then kiss slowly.",
-        "Trace a heart on their palm and let them guess.",
-        "Plan a surprise indoor picnic with fairy lights.",
-        "Give a lingering hug from behind and whisper.",
-        "Place small compliments in their pockets to find.",
-        "Share one hidden wish for tonight.",
-        "Give a playful countdown before a kiss.",
-        "Offer a warm towel and a scalp massage.",
-        "Send them to another room and text a sweet dare."
-    ]
-    // Outdoor-friendly affectionate gestures
-    private let outdoorGestures: [String] = [
-        "Hold hands and whisper a compliment while you walk.",
-        "Take a playful selfie together in a crowd.",
-        "Find a quiet bench and share one wish for the future.",
-        "Give them your jacket and steal a kiss.",
-        "Buy them a favorite snack and surprise them.",
-        "Plan a 10-minute park stroll and link arms.",
-        "Stand behind them and whisper why you're proud.",
-        "Cheer loudly for them in public, just because.",
-        "Leave a kind note in their bag before heading out."
-    ]
-    
-    // Filter/transform explicit content if toggle is on
-    // Returns: (displayTask, redactedExplicit)
-    private var visibleTasks: [(Challenge, Bool)] {
-        vm.tasks.map { task in
-            let shouldReplace = hideExplicit && task.category == .extraHot
-            
-            guard shouldReplace else {
-                return (task, false)
-            }
-            
-            // Deterministic replacement based on task ID
-            let hash = abs(task.id.hashValue)
-            let useOutdoor = hash.isMultiple(of: 2)
-            let gestureList = useOutdoor ? outdoorGestures : indoorGestures
-            let gesture = gestureList[hash % gestureList.count]
-                
-                let replaced = Challenge(
-                    id: task.id,
-                    number: task.number,
-                    title: gesture,
-                category: .extraHot, // Keep the category so it stays in the Kamasutra tab
-                    difficulty: task.difficulty,
-                    hint: "Love Gesture",
-                    imageName: nil,
-                    isLocked: false
-                )
-            return (replaced, true)
-        }
-    }
-    
-    // Apply tab filter
     private var filteredVisibleTasks: [(Challenge, Bool)] {
-        visibleTasks.filter { entry in
-            let displayCat = entry.0.category
-            
-            // If Privacy Mode is ON, we hide all .extraHot tasks from the "All" tab 
-            // and they are already filtered out if we hide the Kamasutra tab.
-            if hideExplicit && displayCat == .extraHot && selectedTab == .all {
-                return false
-            }
-            
+        vm.tasks.filter { task in
             switch selectedTab {
-            case .all:
-                return true
-            case .qna:
-                return displayCat == .loveQnA
-            case .indoor:
-                return displayCat != .locations && displayCat != .extraHot && displayCat != .loveQnA
-            case .outdoor:
-                return displayCat == .locations
-            case .kama:
-                return displayCat == .extraHot
+            case .all: return true
+            case .talk: return task.category == .questions || task.category == .loveQnA
+            case .skills: return task.category == .techniques
+            case .dates: return task.category == .general
+            case .outdoor: return task.category == .locations
             }
-        }
+        }.map { ($0, false) }
     }
     
     // We will group tasks by difficulty
@@ -164,15 +82,10 @@ struct PosterGridView: View {
                                     PosterCell(task: task, displayNumber: displayNumber, onScratchReveal: {
                                         vm.reveal(task: task)
                                     }, onOpenTask: {
-                                        if task.isLocked && !store.hasSubscription {
-                                            store.showPaywall = true
-                                        } else {
-                                            selectedTask = task
-                                            showTaskSheet = true
-                                        }
+                                        selectedTask = task
+                                        showTaskSheet = true
                                     }, redactedExplicit: redacted)
                                     .environmentObject(vm)
-                                    .environmentObject(store)
                                 }
                             }
                             .padding(.horizontal, isIPad ? 38 : 12)
@@ -183,14 +96,22 @@ struct PosterGridView: View {
                 Spacer().frame(height: 120)
             }
         }
+        #if DEBUG
+        .onAppear {
+            // Screenshot hooks (debug builds only): -uiFilter talk -uiReveal 30 -uiOpenTask 3
+            let d = UserDefaults.standard
+            if let f = d.string(forKey: "uiFilter"), let t = FilterTab.allCases.first(where: { "\($0)" == f }) { selectedTab = t }
+            let n = d.integer(forKey: "uiReveal")
+            if n > 0 { vm.tasks.prefix(n).forEach { vm.reveal(task: $0) } }
+            if let i = d.object(forKey: "uiOpenTask") as? String, let idx = Int(i) {
+                let list = filteredVisibleTasks.map { $0.0 }
+                if idx < list.count { DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { selectedTask = list[idx]; showTaskSheet = true } }
+            }
+        }
+        #endif
         .sheet(item: $selectedTask) { t in
             TaskDetailSheet(task: t)
                 .presentationDetents([.large])
-        }
-        .sheet(isPresented: $store.showPaywall) {
-            PaywallView()
-                .environmentObject(store)
-                .environmentObject(vm)
         }
     }
 }
@@ -201,7 +122,7 @@ struct CategoryHeader: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            Text(difficulty.rawValue.uppercased())
+            Text(difficulty.displayName.uppercased())
                 .font(.system(size: 14, weight: .black, design: .rounded))
                 .tracking(2)
                 .foregroundColor(titleColor)

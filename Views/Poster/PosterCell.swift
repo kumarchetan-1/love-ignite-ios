@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PosterCell: View {
     @EnvironmentObject var vm: PosterViewModel
-    @EnvironmentObject var store: StoreKitManager
     @Environment(\.colorScheme) private var scheme
     let task: Challenge
     let displayNumber: Int? // Overrides task.number if provided
@@ -56,10 +55,6 @@ struct PosterCell: View {
                 let neonColor = NeonColors.color(for: task.difficulty)
                 Button { 
                     Haptics.selection()
-                    if task.isLocked && !store.hasSubscription {
-                        store.showPaywall = true
-                        return
-                    }
                     onOpenTask()
                 } label: {
                     VStack(spacing: isIPad ? 10 : 6) {
@@ -69,16 +64,7 @@ struct PosterCell: View {
                                 .frame(width: isIPad ? 60 : 36, height: isIPad ? 60 : 36)
                                 .blur(radius: 4)
                             
-                            if let img = task.imageName, task.category == .extraHot {
-                                Image(img)
-                                    .renderingMode(.template)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: isIPad ? 50 : 28, height: isIPad ? 50 : 28)
-                                    .foregroundColor(neonColor)
-                                    .neonGlow(neonColor)
-                                    .blur(radius: (task.isLocked && !store.hasSubscription) ? 6 : 0)
-                            } else {
+                            do {
                                 Image(systemName: iconForCategory(task.category))
                                     .font(.system(size: isIPad ? 32 : 20, weight: .bold))
                                     .foregroundColor(neonColor)
@@ -134,7 +120,7 @@ struct PosterCell: View {
             }
             
             // Lock Overlay
-            if vm.isRevealed(task) && task.isLocked && !store.hasSubscription {
+            if false {
                  VStack {
                     HStack {
                         Spacer()
@@ -158,19 +144,20 @@ struct PosterCell: View {
         case .general: return "heart.fill"
         case .locations: return "map.fill"
         case .questions: return "bubble.right.fill"
-        case .techniques: return "sparkles"
-        case .extraHot: return "flame.fill"
+        case .techniques: return "person.2.wave.2.fill"
+        case .extraHot: return "star.fill"
         case .loveQnA: return "questionmark.bubble.fill"
         }
     }
     
     private func shortLabel(for task: Challenge) -> String {
         switch task.category {
-        case .extraHot: return "Position"
+        case .extraHot: return "Card"
         case .questions: return "Ask"
         case .locations: return "Go"
         case .loveQnA: return "QnA"
-        default: return "Task"
+        case .techniques: return "Skill"
+        case .general: return "Date"
         }
     }
 }

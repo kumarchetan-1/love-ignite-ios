@@ -1,11 +1,9 @@
 import SwiftUI
-import StoreKit
 
 struct HeaderCard: View {
     let revealedCount: Int
     let total: Int
     @EnvironmentObject var vm: PosterViewModel
-    @EnvironmentObject var store: StoreKitManager
     @Environment(\.colorScheme) private var scheme
     
     @State private var showRelockAlert = false
@@ -106,16 +104,12 @@ struct HeaderCard: View {
                     }
                     
                     HeaderActionButton(
-                        icon: store.hasSubscription ? "eye.fill" : "lock.fill",
-                        title: store.hasSubscription ? "Reveal All" : "Unlock All",
-                        color: store.hasSubscription ? .purple : .orange,
-                        isLocked: !store.hasSubscription
+                        icon: "eye.fill",
+                        title: "Reveal All",
+                        color: .purple,
+                        isLocked: false
                     ) {
-                        if store.hasSubscription {
-                            showRevealAlert = true
-                        } else {
-                            store.showPaywall = true
-                        }
+                        showRevealAlert = true
                     }
                 }
                 .padding(.horizontal, isIPad ? 0 : 2) // Slight padding to prevent edge touching
@@ -130,7 +124,7 @@ struct HeaderCard: View {
                         
                         Spacer()
                         
-                        Text("HOT")
+                        Text("TODAY")
                             .font(.system(size: isIPad ? 12 : 10, weight: .black))
                             .foregroundColor(.white)
                             .padding(.horizontal, 8)

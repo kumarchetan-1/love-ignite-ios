@@ -82,7 +82,7 @@ struct TaskDetailSheet: View {
                         
                         // Icon / Image Section
                         if let name = task.imageName {
-                            // KAMASUTRA / IMAGE MODE
+                            // IMAGE MODE
                             let neonColor = NeonColors.color(for: task.difficulty)
                             
                             ZStack {
@@ -163,11 +163,11 @@ struct TaskDetailSheet: View {
 
     private func taskCategoryTitle() -> String {
         switch task.category {
-        case .general: return "Romantic Task"
-        case .locations: return "Location Challenge"
-        case .questions: return "Deep Question"
-        case .extraHot: return "Kamasutra Position"
-        case .techniques: return "Technique"
+        case .general: return "Date Idea"
+        case .locations: return "Out & About"
+        case .questions: return "Talk Prompt"
+        case .extraHot: return "Card"
+        case .techniques: return "Relationship Skill"
         case .loveQnA: return "Love Questions"
         }
     }
@@ -177,8 +177,8 @@ struct TaskDetailSheet: View {
         case .general: return "heart.fill"
         case .locations: return "map.fill"
         case .questions: return "quote.bubble.fill"
-        case .techniques: return "sparkles"
-        case .extraHot: return "flame.fill"
+        case .techniques: return "person.2.wave.2.fill"
+        case .extraHot: return "star.fill"
         case .loveQnA: return "questionmark.bubble.fill"
         }
     }
@@ -204,7 +204,7 @@ struct DifficultyBadge: View {
                 .frame(width: 8, height: 8)
                 .neonGlow(NeonColors.color(for: difficulty))
             
-            Text(difficulty.rawValue.capitalized)
+            Text(difficulty.displayName)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.white.opacity(0.8))

@@ -1,26 +1,23 @@
 import SwiftUI
-import StoreKit
 
 struct SettingsView: View {
-    @ObservedObject private var authManager = AuthenticationManager.shared
-    @EnvironmentObject var store: StoreKitManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.colorScheme) private var scheme
-    @State private var showAuthSheet = false
     
     var isSidebar: Bool = false
     
     // User preferences
     @AppStorage("haptics_enabled") private var hapticsEnabled: Bool = true
     @AppStorage("daily_reminders") private var dailyReminders: Bool = false
-    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
+    @State private var showGuideGate = false
+    @Environment(\.openURL) private var openURL
     @AppStorage("theme_preference") private var themePreference: String = "dark"
     
     @State private var showingReminderAlert = false
     @State private var showTermsSheet = false
     @State private var showPrivacySheet = false
-    @State private var showEditProfile = false
-    @State private var showChangePassword = false
+    @State private var showMoodTracker = false
+    @State private var showCycleTracker = false
     
     var body: some View {
         Group {
@@ -56,133 +53,6 @@ struct SettingsView: View {
                 }
                 
                 List {
-                    // MARK: - Account Section
-                Section {
-                    if authManager.isAuthenticated {
-                        HStack(spacing: 16) {
-                            Circle()
-                                .fill(LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    Text(authManager.userName.prefix(1).uppercased())
-                                        .font(.title)
-                                        .bold()
-                                        .foregroundColor(.white)
-                                )
-                                .shadow(color: .pink.opacity(0.3), radius: 10, x: 0, y: 5)
-                            
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(authManager.userName)
-                                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                                    .foregroundColor(ThemePalette.primaryText(for: self.scheme))
-                                Text(authManager.userEmail)
-                                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                                    .foregroundColor(ThemePalette.secondaryText(for: self.scheme))
-                            }
-                            
-                            Spacer()
-                            
-                            Button {
-                                showEditProfile = true
-                            } label: {
-                                Image(systemName: "pencil.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.pink)
-                            }
-                        }
-                        .padding(.vertical, 8)
-
-                        SettingsRow(icon: "key.fill", title: "Change Password", color: .pink) {
-                            showChangePassword = true
-                        }
-                        
-                        Button(role: .destructive) {
-                            authManager.logout()
-                        } label: {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Log Out")
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                    } else {
-                        Button {
-                            showAuthSheet = true
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.crop.circle.badge.plus")
-                                    .font(.title2)
-                                    .foregroundColor(.pink)
-                                VStack(alignment: .leading) {
-                                    Text("Join Love Ignite")
-                                        .font(.headline)
-                                    Text("Sync progress across devices")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
-                } header: {
-                    Text("Account").font(.system(size: 14, weight: .bold)).textCase(.uppercase).tracking(1)
-                }
-                
-                // MARK: - Subscription Section
-                Section {
-                    if store.hasSubscription {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle().fill(Color.green.opacity(0.1)).frame(width: 32, height: 32)
-                                Image(systemName: "checkmark.seal.fill")
-                                    .foregroundColor(.green)
-                            }
-                            Text("Premium Status")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Text("Active")
-                                .font(.caption.bold())
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.green)
-                                .clipShape(Capsule())
-                        }
-                    } else {
-                        Button {
-                            store.showPaywall = true
-                        } label: {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    Circle().fill(Color.yellow.opacity(0.1)).frame(width: 32, height: 32)
-                                    Image(systemName: "crown.fill")
-                                        .foregroundColor(.yellow)
-                                }
-                                Text("Upgrade to Premium")
-                                    .fontWeight(.bold)
-                                    .foregroundColor(ThemePalette.primaryText(for: self.scheme))
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.bold())
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    Button {
-                        Task {
-                            try? await AppStore.sync()
-                            await store.updateSubscriptionState()
-                        }
-                    } label: {
-                        Text("Restore Purchases")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                } header: {
-                    Text("Membership").font(.system(size: 14, weight: .bold)).textCase(.uppercase).tracking(1)
-                }
-                
                 // MARK: - Preferences
                 Section {
                     Toggle(isOn: $hapticsEnabled) {
@@ -198,11 +68,6 @@ struct SettingsView: View {
                         showingReminderAlert = true
                     }
                     
-                    Toggle(isOn: $hideExplicit) {
-                        Label("Privacy Mode", systemImage: "eye.slash.fill")
-                    }
-                    .tint(.pink)
-                    
                     Picker(selection: $themePreference) {
                         Text("Dark").tag("dark")
                         Text("Light").tag("light")
@@ -217,7 +82,58 @@ struct SettingsView: View {
                 } header: {
                     Text("Preferences").font(.system(size: 14, weight: .bold)).textCase(.uppercase).tracking(1)
                 }
+
+                // MARK: - Wellness
+                Section {
+                    Button {
+                        showMoodTracker = true
+                    } label: {
+                        HStack {
+                            Label("Mood Tracker", systemImage: "face.smiling.fill")
+                                .foregroundColor(ThemePalette.primaryText(for: self.scheme))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    Button {
+                        showCycleTracker = true
+                    } label: {
+                        HStack {
+                            Label("Cycle & Mood Forecast", systemImage: "calendar.badge.clock")
+                                .foregroundColor(ThemePalette.primaryText(for: self.scheme))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Wellness").font(.system(size: 14, weight: .bold)).textCase(.uppercase).tracking(1)
+                }
                 
+                // MARK: - Optional 18+ guide (opens an external website in Safari)
+                Section {
+                    Button {
+                        showGuideGate = true
+                    } label: {
+                        HStack {
+                            Label("Intimacy Guide (18+)", systemImage: "book.closed.fill")
+                                .foregroundColor(ThemePalette.primaryText(for: self.scheme))
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Adults only").font(.system(size: 14, weight: .bold)).textCase(.uppercase).tracking(1)
+                } footer: {
+                    Text("Optional. Opens an external informational website in Safari. For adults 18 and over.")
+                }
+
                 // MARK: - Support & Legal
                 Section {
                     SettingsLink(title: "Privacy Policy", icon: "hand.raised.fill", color: .blue) {
@@ -254,27 +170,27 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden) 
         }
     }
-        .sheet(isPresented: $showAuthSheet) {
-            AuthenticationView()
-                .presentationDetents([.large])
-        }
-        .sheet(isPresented: $store.showPaywall) {
-            PaywallView()
-                .environmentObject(store)
-        }
         .sheet(isPresented: $showTermsSheet) {
             TermsOfServiceView()
         }
         .sheet(isPresented: $showPrivacySheet) {
             PrivacyPolicyView()
         }
-        .sheet(isPresented: $showEditProfile) {
-            EditProfileView()
-                .environmentObject(authManager)
+        .sheet(isPresented: $showMoodTracker) {
+            MoodTrackerView(showsCloseButton: true)
         }
-        .sheet(isPresented: $showChangePassword) {
-            ChangePasswordView()
-                .environmentObject(authManager)
+        .sheet(isPresented: $showCycleTracker) {
+            CycleTrackerView(showsCloseButton: true)
+        }
+        .alert("Are you 18 or older?", isPresented: $showGuideGate) {
+            Button("I'm 18+, open in Safari") {
+                if let url = URL(string: "https://love-ignite-web.kumarchetan-npr.workers.dev/guide") {
+                    openURL(url)
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("The Intimacy Guide is an external website with adult educational content. It opens in Safari.")
         }
         .alert("Daily reminders", isPresented: $showingReminderAlert) {
             Button("OK", role: .cancel) { }

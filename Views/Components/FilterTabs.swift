@@ -2,7 +2,6 @@ import SwiftUI
 
 struct FilterTabs: View {
     @Binding var selectedTab: PosterGridView.FilterTab
-    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
     @Environment(\.colorScheme) private var scheme
     
     var body: some View {
@@ -32,19 +31,10 @@ struct FilterTabs: View {
                 Spacer(minLength: 0)
             }
         }
-        .onChange(of: hideExplicit) { newValue in
-            if newValue && selectedTab == .kama {
-                selectedTab = .all
-            }
-        }
     }
     
     private var visibleTabs: [PosterGridView.FilterTab] {
-        if hideExplicit {
-            return [.all, .qna, .indoor, .outdoor]
-        } else {
-            return [.all, .qna, .indoor, .outdoor, .kama]
-        }
+        PosterGridView.FilterTab.allCases
     }
     
     private func textColor(for tab: PosterGridView.FilterTab) -> Color {

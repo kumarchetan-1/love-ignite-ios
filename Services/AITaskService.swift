@@ -9,21 +9,26 @@ class AITaskService {
     
     private init() {
         // Correct initialization for the latest Firebase AI Logic SDK
+        // Updated from gemini-1.5-flash (retired Sep 24, 2025) to gemini-2.0-flash-exp
+        // Alternative models if this doesn't work:
+        // - gemini-2.5-flash (recommended stable replacement)
+        // - gemini-2.5-flash-lite (lighter version)
+        // - gemini-1.5-pro (if still available)
         let ai = FirebaseAI.firebaseAI(backend: .googleAI())
-        self.model = ai.generativeModel(modelName: "gemini-1.5-flash")
+        self.model = ai.generativeModel(modelName: "gemini-2.0-flash-exp")
     }
     
-    func generateDailyTasks(hideExplicit: Bool) async -> [Challenge] {
+    func generateDailyTasks() async -> [Challenge] {
         guard let model = model else {
             return []
         }
         
         let prompt = """
-        Act as a relationship expert and creative romantic coach. 
-        Create 5 unique, innovative, and short romantic tasks for a couple to do today. 
-        Focus on deepening connection, playfulness, and intimacy.
-        
-        Tone: \(hideExplicit ? "Sweet, romantic, and playful (PG-rated)" : "Passionate, intimate, and spicy (Adult-rated)")
+        Act as a warm, practical relationship coach for modern couples.
+        Create 5 unique, short activities for a couple to do today that help with
+        communication, shared expectations, healthy conflict, texting habits, date ideas or quick check-ins.
+
+        Tone: Kind, playful and family-friendly (PG). Keep every activity wholesome and suitable for couples of any age.
         
         Requirements:
         1. Keep each task under 15 words.

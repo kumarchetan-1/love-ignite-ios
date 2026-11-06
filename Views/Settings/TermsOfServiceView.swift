@@ -19,7 +19,7 @@ struct TermsOfServiceView: View {
                     
                     SectionView(title: "4. Content & Conduct", content: "Users are responsible for the content they unlock or sync. You agree not to use the app for any illegal or unauthorized purpose.")
                     
-                    SectionView(title: "5. Premium Subscriptions", content: "Premium features are available via one-time purchase. All sales are final and handled through the Apple App Store. Subscription features are subject to change.")
+                    SectionView(title: "5. Pricing", content: "Love Ignite is free to use. There are no in-app purchases or subscriptions.")
                     
                     SectionView(title: "6. Limitation of Liability", content: "Love Ignite is provided 'as is' without warranties of any kind. We are not liable for any damages arising from your use of the application.")
                     

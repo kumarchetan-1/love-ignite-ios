@@ -12,14 +12,11 @@ class PosterViewModel: ObservableObject {
 
     private var storage: StorageServiceProtocol
     private var cancellables = Set<AnyCancellable>()
-    
-    @AppStorage("hide_explicit") private var hideExplicit: Bool = true
-    
+
     private struct Keys {
-        static let tasks = "tasks_v2"
-        static let achievements = "achievements_v1"
-        static let revealed = "revealed_v1"
-        static let positionLocks = "positionLocks_v1"
+        static let tasks = "tasks_v3"
+        static let achievements = "achievements_v3"
+        static let revealed = "revealed_v3"
     }
 
     init(storage: StorageServiceProtocol = StorageService.shared) {
@@ -30,26 +27,6 @@ class PosterViewModel: ObservableObject {
         Task {
             await refreshDailyTasksWithAI()
         }
-
-        // Sync with backend if already authenticated
-        if AuthenticationManager.shared.isAuthenticated {
-            Task {
-                await syncWithBackend()
-            }
-        }
-
-        // Observe authentication changes
-        AuthenticationManager.shared.$isAuthenticated
-            .dropFirst()
-            .removeDuplicates()
-            .sink { [weak self] loggedIn in
-                if loggedIn {
-                    Task {
-                        await self?.syncWithBackend()
-                    }
-                }
-            }
-            .store(in: &cancellables)
 
         $revealedIDs
             .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
@@ -63,52 +40,34 @@ class PosterViewModel: ObservableObject {
     }
 
     func loadSampleDataIfNeeded() {
-        let savedLocks = storage.load([String: Bool].self, for: Keys.positionLocks)
-        
-        if storage.load([Challenge].self, for: Keys.tasks) == nil {
-            let generated = TasksData.generateTasks(count: 236, existingLocks: savedLocks)
+        if let saved = storage.load([Challenge].self, for: Keys.tasks), !saved.isEmpty {
+            self.tasks = saved
+        } else {
+            let generated = TasksData.generateTasks()
             storage.save(generated.tasks, for: Keys.tasks)
-            storage.save(generated.locks, for: Keys.positionLocks)
             self.tasks = generated.tasks
-        } else if let saved = storage.load([Challenge].self, for: Keys.tasks) {
-            if saved.count < 236 {
-                // Migrate to 236 tasks if previously 200
-                let generated = TasksData.generateTasks(count: 236, existingLocks: savedLocks)
-                storage.save(generated.tasks, for: Keys.tasks)
-                storage.save(generated.locks, for: Keys.positionLocks)
-                self.tasks = generated.tasks
-            } else {
-                self.tasks = saved
-            }
-            // If locks missing, regenerate to establish consistent locks
-            if savedLocks == nil {
-                let generated = TasksData.generateTasks(count: 236, existingLocks: nil)
-                storage.save(generated.tasks, for: Keys.tasks)
-                storage.save(generated.locks, for: Keys.positionLocks)
-                self.tasks = generated.tasks
-            }
         }
 
         // Always refresh daily tasks on load (or could store date to persist for 24h)
         self.dailyTasks = TasksData.generateDailyTasks()
 
-        // Achievements: baseline plus new naughty/romantic ones
+        // Achievements
         let defaultAch: [Achievement] = [
             Achievement(id: "a1", title: "First Spark", unlocked: false),
-            Achievement(id: "a2", title: "Heating Up (10)", unlocked: false),
+            Achievement(id: "a2", title: "Warming Up (10)", unlocked: false),
             Achievement(id: "a3", title: "Halfway There (50)", unlocked: false),
-            Achievement(id: "a4", title: "Passionate Pro (100)", unlocked: false),
-            Achievement(id: "a5", title: "Kamasutra Master (All Positions)", unlocked: false),
-            Achievement(id: "a6", title: "True Romantic (All Tasks)", unlocked: false),
-            Achievement(id: "a7", title: "Flirty Twenty (20 Reveals)", unlocked: false),
-            Achievement(id: "a8", title: "Date Night Darling (20 Romantic)", unlocked: false),
-            Achievement(id: "a9", title: "Spicy Explorer (20 Extra Hot)", unlocked: false),
-            Achievement(id: "a10", title: "Question Tease (15 Questions)", unlocked: false),
-            Achievement(id: "a11", title: "City of Love (15 Locations)", unlocked: false),
-            Achievement(id: "a12", title: "Intimate Whisper (10 Techniques)", unlocked: false),
-            Achievement(id: "a13", title: "Centurion of Love (150 Reveals)", unlocked: false),
-            Achievement(id: "a14", title: "Full House (175 Reveals)", unlocked: false),
-            Achievement(id: "a15", title: "All In Lover (190 Reveals)", unlocked: false),
+            Achievement(id: "a4", title: "Committed Pro (100)", unlocked: false),
+            Achievement(id: "a5", title: "Check-in Champ (10 Skills)", unlocked: false),
+            Achievement(id: "a6", title: "True Romantic (All Cards)", unlocked: false),
+            Achievement(id: "a7", title: "Twenty Together (20 Cards)", unlocked: false),
+            Achievement(id: "a8", title: "Date Night Darling (20 Dates)", unlocked: false),
+            Achievement(id: "a9", title: "Deep Talker (20 Love Questions)", unlocked: false),
+            Achievement(id: "a10", title: "Curious Couple (15 Talks)", unlocked: false),
+            Achievement(id: "a11", title: "Out & About (15 Outings)", unlocked: false),
+            Achievement(id: "a12", title: "Good Listener (20 Skills)", unlocked: false),
+            Achievement(id: "a13", title: "Century Club (100 Cards)", unlocked: false),
+            Achievement(id: "a14", title: "Full House (120 Cards)", unlocked: false),
+            Achievement(id: "a15", title: "All In (130 Cards)", unlocked: false),
             Achievement(id: "a16", title: "Heart Collector (All Achievements)", unlocked: false)
         ]
         
@@ -158,14 +117,6 @@ class PosterViewModel: ObservableObject {
     func saveProgress() {
         storage.save(Array(revealedIDs), for: Keys.revealed)
         storage.save(achievements, for: Keys.achievements)
-        
-        // Push to backend if authenticated
-        if AuthenticationManager.shared.isAuthenticated {
-            Task {
-                try? await BackendService.shared.syncUnlockedCards(cardIds: Array(revealedIDs))
-                try? await BackendService.shared.syncAchievements(achievementIds: achievements.filter { $0.unlocked }.map { $0.id })
-            }
-        }
     }
 
     func loadProgress() {
@@ -175,45 +126,13 @@ class PosterViewModel: ObservableObject {
         }
     }
 
-    @MainActor
-    func syncWithBackend() async {
-        do {
-            let profile = try await BackendService.shared.getProfile()
-            
-            // Merge revealed cards
-            let serverCards = Set(profile.unlockedCards)
-            if !serverCards.isEmpty {
-                self.revealedIDs.formUnion(serverCards)
-            }
-            
-            // Merge achievements
-            let serverAchievements = Set(profile.achievements)
-            for i in 0..<achievements.count {
-                if serverAchievements.contains(achievements[i].id) {
-                    achievements[i].unlocked = true
-                }
-            }
-            
-            // Save merged state locally
-            saveProgress()
-            
-            // Recalculate based on merged state
-            checkAchievements()
-        } catch {
-            // Silent fail
-        }
-    }
-
     func resetProgress() {
         revealedIDs.removeAll()
         achievements.indices.forEach { achievements[$0].unlocked = false }
         
-        // Regenerate tasks but preserve position lock map
-        let savedLocks = storage.load([String: Bool].self, for: Keys.positionLocks)
-        let generated = TasksData.generateTasks(count: 236, existingLocks: savedLocks)
+        let generated = TasksData.generateTasks()
         self.tasks = generated.tasks
         storage.save(generated.tasks, for: Keys.tasks)
-        storage.save(generated.locks, for: Keys.positionLocks)
         
         saveProgress()
     }
@@ -251,13 +170,12 @@ class PosterViewModel: ObservableObject {
         if totalReveals >= 100, let idx = achievements.firstIndex(where: { $0.id == "a4" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
-        // 5. Kamasutra Master (all positions revealed)
-        let revealedPositionsCount = revealedTasks.filter { $0.category == .extraHot }.count
-        if revealedPositionsCount >= 59, let idx = achievements.firstIndex(where: { $0.id == "a5" && !$0.unlocked }) {
+        // 5. Check-in Champ (10 skills)
+        if categoryCount(.techniques) >= 10, let idx = achievements.firstIndex(where: { $0.id == "a5" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 6. True Romantic (All 200 Tasks)
-        if totalReveals >= 200, let idx = achievements.firstIndex(where: { $0.id == "a6" && !$0.unlocked }) {
+        if !tasks.isEmpty && totalReveals >= tasks.count, let idx = achievements.firstIndex(where: { $0.id == "a6" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 7. Flirty Twenty
@@ -268,8 +186,8 @@ class PosterViewModel: ObservableObject {
         if categoryCount(.general) >= 20, let idx = achievements.firstIndex(where: { $0.id == "a8" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
-        // 9. Spicy Explorer (20 Extra Hot)
-        if categoryCount(.extraHot) >= 20, let idx = achievements.firstIndex(where: { $0.id == "a9" && !$0.unlocked }) {
+        // 9. Deep Talker (20 love questions)
+        if categoryCount(.loveQnA) >= 20, let idx = achievements.firstIndex(where: { $0.id == "a9" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 10. Question Tease (15 Questions)
@@ -281,19 +199,19 @@ class PosterViewModel: ObservableObject {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 12. Intimate Whisper (10 Techniques)
-        if categoryCount(.techniques) >= 10, let idx = achievements.firstIndex(where: { $0.id == "a12" && !$0.unlocked }) {
+        if categoryCount(.techniques) >= 20, let idx = achievements.firstIndex(where: { $0.id == "a12" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 13. Centurion of Love (150 reveals)
-        if totalReveals >= 150, let idx = achievements.firstIndex(where: { $0.id == "a13" && !$0.unlocked }) {
+        if totalReveals >= 100, let idx = achievements.firstIndex(where: { $0.id == "a13" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 14. Full House (175 reveals)
-        if totalReveals >= 175, let idx = achievements.firstIndex(where: { $0.id == "a14" && !$0.unlocked }) {
+        if totalReveals >= 120, let idx = achievements.firstIndex(where: { $0.id == "a14" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 15. All In Lover (190 reveals)
-        if totalReveals >= 190, let idx = achievements.firstIndex(where: { $0.id == "a15" && !$0.unlocked }) {
+        if totalReveals >= 130, let idx = achievements.firstIndex(where: { $0.id == "a15" && !$0.unlocked }) {
             achievements[idx].unlocked = true; changed = true; newlyUnlocked = achievements[idx]
         }
         // 16. Heart Collector (all achievements)
@@ -340,7 +258,7 @@ class PosterViewModel: ObservableObject {
             return
         }
 
-        let aiTasks = await AITaskService.shared.generateDailyTasks(hideExplicit: hideExplicit)
+        let aiTasks = await AITaskService.shared.generateDailyTasks()
         
         if !aiTasks.isEmpty {
             self.dailyTasks = aiTasks

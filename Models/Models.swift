@@ -24,3 +24,15 @@ struct Achievement: Identifiable, Codable, Equatable {
     var title: String
     var unlocked: Bool
 }
+
+extension Difficulty {
+    /// Friendly level names shown in the UI.
+    var displayName: String {
+        switch self {
+        case .easy: return "Spark"
+        case .medium: return "Connect"
+        case .hard: return "Deepen"
+        case .extreme: return "Grow"
+        }
+    }
+}

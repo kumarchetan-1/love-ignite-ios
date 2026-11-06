@@ -9,7 +9,7 @@ Love Ignite is a beautifully designed romantic challenge app for couples, built 
 - **Difficulty Levels**: From Easy to Extreme, catering to all comfort levels.
 - **Progress Tracking**: Achievement system and cloud synchronization.
 - **Modern UI**: Neon-themed interface with customizable themes and haptic feedback.
-- **In-App Purchases**: Premium content unlocking via StoreKit.
+- Free app: no in-app purchases.
 
 ## 🛠 Tech Stack
 
