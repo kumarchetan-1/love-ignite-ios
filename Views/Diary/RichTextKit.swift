@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import UIKit
 
 enum NoteTextColor: String, CaseIterable, Identifiable {
